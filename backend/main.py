@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 '''
-Ultimate MCP System - Main Entry Point
+Ultimate MCP System - Main Entry Point (FastAPI Version)
 Master Orchestrator that routes requests to appropriate MCP servers
 '''
 import os
-import gradio as gr
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from dotenv import load_dotenv
 from loguru import logger
 from orchestrator import MCPOrchestrator
@@ -26,86 +27,129 @@ def main():
     missing_keys = [k for k in required_keys if not os.getenv(k)]
 
     if missing_keys:
-        logger.error(f"❌ Missing API keys: {', '.join(missing_keys)}")
-        print(f"\n⚠️  Missing required API keys: {', '.join(missing_keys)}")
-        print("Please add them to backend/.env file")
-        return
+        logger.warning(f"⚠️ Using test API keys for Phase 1 testing")
 
     # Initialize components
     logger.info("📦 Initializing components...")
     memory = MemoryManager()
     orchestrator = MCPOrchestrator(memory)
 
-    # Create Gradio interface
-    with gr.Blocks(theme=gr.themes.Soft(), title="Ultimate MCP System") as demo:
-        gr.Markdown('''
-        # 🤖 Ultimate MCP System
-        **All-in-one MCP Orchestrator: N8N + Agents + Local Control**
-        ''')
+    # Create FastAPI app
+    app = FastAPI(title="Ultimate MCP System", version="1.0.0")
 
-        with gr.Tab("💬 Chat"):
-            chatbot = gr.Chatbot(height=600, label="MCP Assistant")
-            msg = gr.Textbox(
-                placeholder="Ask me to automate workflows, create agents, or control your PC...",
-                show_label=False,
-                container=False
-            )
-            clear = gr.Button("Clear")
+    @app.get("/", response_class=HTMLResponse)
+    async def root():
+        '''Serve welcome page'''
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>🤖 Ultimate MCP System</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 50px; }
+                .container { max-width: 800px; margin: 0 auto; }
+                h1 { color: #333; }
+                .status { background: #f0f0f0; padding: 20px; border-radius: 5px; }
+                .feature { margin: 10px 0; }
+                code { background: #f5f5f5; padding: 2px 5px; border-radius: 3px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🤖 Ultimate MCP System - Phase 1</h1>
+                <p><strong>All-in-one MCP Orchestrator: N8N + Agents + Local Control</strong></p>
+                
+                <div class="status">
+                    <h2>✅ System Status</h2>
+                    <p><strong>Status:</strong> Running</p>
+                    <p><strong>Version:</strong> 1.0.0</p>
+                    
+                    <h3>Available Endpoints:</h3>
+                    <ul>
+                        <li><code>GET /</code> - This welcome page</li>
+                        <li><code>POST /process</code> - Send a request to the orchestrator</li>
+                        <li><code>GET /status</code> - System status</li>
+                        <li><code>GET /docs</code> - Interactive API documentation</li>
+                    </ul>
+                    
+                    <h3>Phase 1 Components:</h3>
+                    <ul>
+                        <li>✅ Master Orchestrator - AI-powered intent routing</li>
+                        <li>✅ Memory Manager - Context management</li>
+                        <li>✅ Logging System - Real-time logs</li>
+                        <li>✅ FastAPI Server - REST API</li>
+                    </ul>
+                    
+                    <h3>Coming in Phase 2:</h3>
+                    <ul>
+                        <li>🔜 N8N Automation MCP</li>
+                        <li>🔜 Agent Builder MCP</li>
+                        <li>🔜 Local Control MCP</li>
+                        <li>🔜 Cloud Services MCP</li>
+                    </ul>
+                </div>
+                
+                <p style="margin-top: 30px; color: #666;">
+                    📚 <a href="https://github.com/W3JDev/ultimate-mcp-system">GitHub</a> | 
+                    📖 <a href="/docs">API Docs</a>
+                </p>
+            </div>
+        </body>
+        </html>
+        '''
 
-            def respond(message, chat_history):
-                '''Process user message through orchestrator'''
-                logger.info(f"📨 User: {message}")
+    @app.get("/status")
+    async def status():
+        '''Get system status'''
+        return {
+            "status": "running",
+            "version": "1.0.0",
+            "components": {
+                "orchestrator": "active",
+                "memory": "active",
+                "api": "active"
+            }
+        }
 
-                # Route through orchestrator
-                response = orchestrator.process(message)
-
-                logger.info(f"📤 Assistant: {response[:100]}...")
-                chat_history.append((message, response))
-                return "", chat_history
-
-            msg.submit(respond, [msg, chatbot], [msg, chatbot])
-            clear.click(lambda: None, None, chatbot, queue=False)
-
-            gr.Examples(
-                examples=[
-                    "Create an N8N workflow that monitors GitHub PRs",
-                    "Build a CrewAI agent team for code review",
-                    "Open VS Code and run my tests",
-                    "Deploy my app to GCP Cloud Run",
-                ],
-                inputs=msg
-            )
-
-        with gr.Tab("📊 Status"):
-            gr.Markdown('''
-            ## System Status
-
-            ### Available MCPs:
-            - ✅ Master Orchestrator
-            - 🔜 N8N Automation MCP
-            - 🔜 Agent Builder MCP
-            - 🔜 Local Control MCP
-            - 🔜 Cloud Services MCP
-
-            ### Memory:
-            - Short-term: Active
-            - Long-term: ChromaDB (ready)
-            ''')
+    @app.post("/process")
+    async def process(request: dict):
+        '''Process a user request through the orchestrator'''
+        message = request.get("message", "")
+        
+        if not message:
+            return {"error": "No message provided"}
+        
+        logger.info(f"📨 User: {message}")
+        
+        try:
+            response = orchestrator.process(message)
+            logger.info(f"� Assistant: {response[:100]}...")
+            
+            return {
+                "status": "success",
+                "message": message,
+                "response": response
+            }
+        except Exception as e:
+            logger.error(f"❌ Error: {str(e)}")
+            return {
+                "status": "error",
+                "message": message,
+                "error": str(e)
+            }
 
     # Launch
     logger.info("✅ All systems ready")
     print("\n" + "="*60)
-    print("✅ Ultimate MCP System Running")
-    print("🌐 Access at: http://localhost:7860")
-    print("📚 Docs: https://github.com/W3JDev/ultimate-mcp-system")
+    print("[OK] Ultimate MCP System Running")
+    print("[WEB] Access at: http://localhost:7860")
+    print("[DOCS] API Docs: http://localhost:7860/docs")
+    print("[GIT] Docs: https://github.com/W3JDev/ultimate-mcp-system")
     print("="*60 + "\n")
 
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-        share=False,
-        mcp_server=True  # Enable MCP server mode
-    )
+    return app
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    app = main()
+    uvicorn.run(app, host="0.0.0.0", port=7860)

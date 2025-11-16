@@ -12,7 +12,18 @@ class MCPOrchestrator:
     def __init__(self, memory_manager):
         '''Initialize orchestrator with memory and AI client'''
         self.memory = memory_manager
-        self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        
+        # Initialize Anthropic client if API key exists
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if api_key and api_key != "test-key":
+            try:
+                self.client = Anthropic(api_key=api_key)
+            except Exception as e:
+                logger.warning(f"⚠️ Could not initialize Anthropic client: {e}")
+                self.client = None
+        else:
+            logger.info("⚠️ Using keyword-based routing (no Anthropic API key)")
+            self.client = None
 
         # Available MCP servers (will be expanded)
         self.mcp_servers = {
@@ -57,6 +68,10 @@ class MCPOrchestrator:
     def _analyze_intent(self, user_input: str, context: Dict) -> Dict[str, Any]:
         '''Use Claude to analyze user intent and determine routing'''
 
+        # Fallback to keyword-based routing if no API client
+        if self.client is None:
+            return self._keyword_based_intent(user_input)
+
         system_prompt = f'''You are the intent analyzer for Ultimate MCP System.
 Analyze user requests and determine which MCP to route to:
 
@@ -86,6 +101,21 @@ Respond with JSON: {{"target": "...", "confidence": 0.0-1.0, "params": {{}}}}'''
 
         except Exception as e:
             logger.error(f"Intent analysis error: {e}")
+            return self._keyword_based_intent(user_input)
+    
+    def _keyword_based_intent(self, user_input: str) -> Dict[str, Any]:
+        '''Simple keyword-based intent detection fallback'''
+        text = user_input.lower()
+        
+        if any(word in text for word in ['workflow', 'n8n', 'automation', 'integrate']):
+            return {"target": "n8n", "confidence": 0.7, "params": {}}
+        elif any(word in text for word in ['agent', 'crewai', 'adk', 'langbase', 'crew']):
+            return {"target": "agent", "confidence": 0.7, "params": {}}
+        elif any(word in text for word in ['command', 'file', 'system', 'browser', 'local', 'pc']):
+            return {"target": "local", "confidence": 0.7, "params": {}}
+        elif any(word in text for word in ['cloud', 'gcp', 'whatsapp', 'github']):
+            return {"target": "cloud", "confidence": 0.7, "params": {}}
+        else:
             return {"target": "general", "confidence": 0.5, "params": {}}
 
     def _handle_n8n(self, input_text: str, intent: Dict) -> str:

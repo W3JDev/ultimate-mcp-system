@@ -3,12 +3,15 @@ N8N Automation MCP Server
 Main Gradio MCP server for N8N workflow automation
 '''
 import os
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 import gradio as gr
 from typing import Dict, Any, Optional
 from loguru import logger
-from .workflow_builder import WorkflowBuilder
-from .workflow_tester import WorkflowTester
-from .deployer import N8NDeployer
+from workflow_builder import WorkflowBuilder
+from workflow_tester import WorkflowTester
+from deployer import N8NDeployer
 
 class N8NAutomationMCP:
     '''N8N Automation MCP Server'''
@@ -171,4 +174,5 @@ def create_n8n_mcp_interface():
 if __name__ == "__main__":
     # Can run standalone as MCP server
     interface = create_n8n_mcp_interface()
-    interface.launch(mcp_server=True)
+    port = int(os.getenv("N8N_PORT", "7862"))
+    interface.launch(server_name="0.0.0.0", server_port=port, share=False)

@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # Master Orchestrator (Port 7860)
+  orchestrator:
+    build: .
+    container_name: mcp-orchestrator
+    ports:
+      - "7860:7860"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./backend/logs:/app/backend/logs
+      - ./backend/memory:/app/backend/memory
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: python backend/main.py
+
+  # N8N Automation MCP (Port 7862)
+  n8n-mcp:
+    build: .
+    container_name: mcp-n8n
+    ports:
+      - "7862:7862"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - N8N_API_KEY=${N8N_API_KEY}
+      - N8N_BASE_URL=${N8N_BASE_URL:-http://localhost:5678}
+    volumes:
+      - ./backend/logs:/app/backend/logs
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    command: python backend/mcp_servers/n8n_automation/server.py
+
+  # Agent Builder MCP (Port 7863)
+  agent-builder:
+    build: .
+    container_name: mcp-agent-builder
+    ports:
+      - "7863:7863"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./backend/logs:/app/backend/logs
+      - ./backend/mcp_servers/agent_builder/agents:/app/backend/mcp_servers/agent_builder/agents
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    command: python backend/mcp_servers/agent_builder/server.py
+
+  # Local Control MCP (Port 7864)
+  local-control:
+    build: .
+    container_name: mcp-local-control
+    ports:
+      - "7864:7864"
+    volumes:
+      - ./backend/logs:/app/backend/logs
+    networks:
+      - mcp-network
+    restart: unless-stopped
+    privileged: true  # Required for system control features
+    command: python backend/mcp_servers/local_control/server.py
+
+  # Optional: N8N Instance (if not using external)
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+    volumes:
+      - n8n-data:/home/node/.n8n
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+networks:
+  mcp-network:
+    driver: bridge
+
+volumes:
+  n8n-data:

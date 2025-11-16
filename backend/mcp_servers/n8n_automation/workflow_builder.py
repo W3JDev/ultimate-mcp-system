@@ -12,7 +12,16 @@ class WorkflowBuilder:
 
     def __init__(self):
         '''Initialize builder with Claude API'''
-        self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        try:
+            if api_key and api_key != "test-key":
+                self.client = Anthropic(api_key=api_key)
+            else:
+                self.client = None
+                logger.warning("⚠️  No valid Anthropic API key - workflow builder running in limited mode")
+        except Exception as e:
+            self.client = None
+            logger.error(f"❌ Failed to initialize Anthropic client: {e}")
         self.templates = self._load_templates()
         logger.info("🏗️  Workflow builder initialized")
 
@@ -27,6 +36,11 @@ class WorkflowBuilder:
             N8N workflow JSON
         '''
         logger.info(f"🏗️  Building workflow: {description}")
+
+        # Fallback to template if no AI available
+        if self.client is None:
+            logger.warning("⚠️  Using template workflow (no AI client)")
+            return self._create_template_workflow(description)
 
         # Use Claude to generate workflow
         system_prompt = self._get_system_prompt()
@@ -130,4 +144,22 @@ Generate complete, working N8N workflows.'''
             "github_to_slack": {},
             "email_to_sheet": {},
             "rss_to_twitter": {},
+        }
+
+    def _create_template_workflow(self, description: str) -> Dict[str, Any]:
+        '''Create a basic template workflow when AI is unavailable'''
+        return {
+            "name": f"Workflow: {description[:50]}",
+            "nodes": [
+                {
+                    "id": "trigger",
+                    "type": "n8n-nodes-base.manualTrigger",
+                    "parameters": {},
+                    "position": [250, 300]
+                }
+            ],
+            "connections": {},
+            "settings": {
+                "executionOrder": "v1"
+            }
         }

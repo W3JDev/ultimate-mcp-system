@@ -1,37 +1,386 @@
 # 🚀 Ultimate MCP System
 
-**All-in-one MCP Orchestrator: N8N Automation + Multi-Framework Agent Builder + Local PC Control**
+**Multi-Server Orchestration Platform for AI-Powered Automation**
 
-[![Hackathon](https://img.shields.io/badge/Hackathon-MCP%202025-blue)](https://huggingface.co/MCP-1st-Birthday)
+[![Status](https://img.shields.io/badge/Status-Beta-yellow)]()
+[![Python](https://img.shields.io/badge/Python-3.11+-blue)]()
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Hackathon](https://img.shields.io/badge/Hackathon-MCP%202025-orange)](https://huggingface.co/MCP-1st-Birthday)
 
-## 🎯 Quick Links
-- **[AGENT.md](AGENT.md)** ⭐ START HERE - Complete instructions for AI agents
-- **[Documentation](docs/)** - Comprehensive guides
-- **[Tracker](https://docs.google.com/spreadsheets/d/1ldyDrULAOKL0xufNkzaEfI5xvzROsdFqZTIFYKIKZMk)** - Development progress
+---
+
+## 📋 Overview
+
+Ultimate MCP System is an **ambitious multi-server orchestration platform** that coordinates four specialized automation servers through a master orchestrator. Each server handles a specific domain: workflow automation, agent creation, system control, and cloud services.
+
+### ⚠️ Current Status: Beta / Prototype
+
+**What Works:**
+- ✅ All 4 servers running with Gradio UIs
+- ✅ Graceful error handling without API keys
+- ✅ Python 3.13 compatibility (via audioop-lts)
+- ✅ Basic keyword-based routing
+- ✅ Comprehensive logging system
+
+**What's Limited:**
+- ⚠️ Not true MCP protocol implementation (no JSON-RPC/stdio)
+- ⚠️ UI framework, not fully functional automation
+- ⚠️ Requires API keys for AI-powered features
+- ⚠️ Core features stubbed or in development
+
+**See [SYSTEM_ASSESSMENT.md](SYSTEM_ASSESSMENT.md) for detailed honest evaluation.**
+
+---
+
+## 🎯 Architecture
+
+```
+┌─────────────────────────────────────────┐
+│   Master Orchestrator (Port 7860)      │
+│   FastAPI + AI Intent Routing          │
+└───────────┬─────────────────────────────┘
+            │
+    ┌───────┼───────┬───────────┐
+    │       │       │           │
+┌───▼───┐ ┌─▼──┐ ┌─▼────┐ ┌───▼────┐
+│  N8N  │ │Agent│ │Local │ │ Cloud  │
+│  MCP  │ │Build│ │ Ctrl │ │Services│
+│ 7862  │ │7863 │ │ 7864 │ │  TBD   │
+└───────┘ └─────┘ └──────┘ └────────┘
+```
+
+---
 
 ## ⚡ Quick Start
 
+### Prerequisites
+
+- **Python 3.11+** (3.13 supported with audioop-lts)
+- **Optional**: Anthropic API key (for AI features)
+- **Optional**: N8N instance (for workflow deployment)
+
+### Installation
+
 ```bash
+# Clone repository
 git clone https://github.com/W3JDev/ultimate-mcp-system.git
 cd ultimate-mcp-system
+
+# Create virtual environment (Windows)
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
+# Or (Linux/Mac)
+python3 -m venv venv
 source venv/bin/activate
+
+# Install dependencies
 pip install -r backend/requirements.txt
+
+# Install Playwright browsers (for Local Control)
+playwright install chromium
+
+# Configure environment
 cp .env.example .env
-# Add your API keys to .env
-python backend/main.py
+# Edit .env with your API keys (optional for basic testing)
+
+# Start all servers
+python launch_all_servers.py
+
+# Or start individually
+python backend/main.py  # Master Orchestrator
+python backend/mcp_servers/n8n_automation/server.py
+python backend/mcp_servers/agent_builder/server.py
+python backend/mcp_servers/local_control/server.py
 ```
+
+### Access UIs
+
+- **Master Orchestrator**: http://localhost:7860
+- **N8N Automation**: http://localhost:7862
+- **Agent Builder**: http://localhost:7863
+- **Local Control**: http://localhost:7864
+
+---
 
 ## 📦 What's Inside
 
-- **N8N Automation MCP**: Build, test & deploy workflows via AI
-- **Agent Builder MCP**: Create agents with ADK, CrewAI, Langbase, A2A
-- **Local PC Control MCP**: Full system access via AI commands
-- **Cloud Services MCP**: GCP, WhatsApp, GitHub Actions
+### 1. Master Orchestrator (Port 7860)
+**Purpose**: Routes user requests to appropriate MCP servers
 
-## 📚 Documentation Structure
+**Features:**
+- Natural language intent analysis (with API key)
+- Keyword-based fallback routing
+- Memory management across MCPs
+- FastAPI web interface
 
-Every folder has README.md explaining its purpose.
-Check [AGENT.md](AGENT.md) for complete context.
+**Tech**: FastAPI, Anthropic Claude API, loguru
+
+### 2. N8N Automation MCP (Port 7862)
+**Purpose**: AI-powered workflow creation and deployment
+
+**Features:**
+- Generate N8N workflows from descriptions
+- Template-based fallback
+- Workflow testing
+- N8N API integration
+
+**Tech**: Gradio, Anthropic Claude, N8N API
+
+**Detailed Docs**: [backend/mcp_servers/n8n_automation/README_DETAILED.md](backend/mcp_servers/n8n_automation/README_DETAILED.md)
+
+### 3. Agent Builder MCP (Port 7863)
+**Purpose**: Multi-framework AI agent creation
+
+**Features:**
+- 6-tab UI for different frameworks
+- Support for ADK, CrewAI, A2A, Langbase, AGUI
+- JSON-based agent storage
+- Agent management (CRUD operations)
+
+**Tech**: Gradio, multiple AI frameworks
+
+**Detailed Docs**: [backend/mcp_servers/agent_builder/README.md](backend/mcp_servers/agent_builder/README.md)
+
+### 4. Local Control MCP (Port 7864)
+**Purpose**: System automation and PC control
+
+**Features:**
+- System command execution
+- Process management
+- File operations
+- Input control (keyboard/mouse)
+- Browser automation (Playwright)
+- System information display
+
+**Tech**: Gradio, psutil, pyautogui, playwright
+
+---
+
+## 🔑 API Keys & Configuration
+
+### Required for AI Features
+
+```env
+# .env file
+ANTHROPIC_API_KEY=sk-ant-api03-...
+OPENAI_API_KEY=sk-...
+```
+
+### Optional Integrations
+
+```env
+N8N_API_KEY=your_n8n_key
+N8N_BASE_URL=http://localhost:5678
+GITHUB_TOKEN=ghp_...
+COMPOSIO_API_KEY=...
+```
+
+### Running Without Keys
+
+System runs with limited functionality:
+- ✅ UIs load and display
+- ✅ Keyword-based routing
+- ✅ Template workflows
+- ⚠️ No AI-powered features
+- ⚠️ No intelligent routing
+
+---
+
+## 📚 Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [SYSTEM_ASSESSMENT.md](SYSTEM_ASSESSMENT.md) | **Honest evaluation, ratings, roadmap** |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | **Docker, Cloud Run, Railway, AWS, etc.** |
+| [AGENT.md](AGENT.md) | AI agent instructions for development |
+| [.github/copilot-instructions.md](.github/copilot-instructions.md) | GitHub Copilot guidance |
+| [SETUP_STATUS.md](SETUP_STATUS.md) | Python 3.13 compatibility notes |
+
+### Per-Server Documentation
+
+- [N8N Automation README](backend/mcp_servers/n8n_automation/README_DETAILED.md)
+- [Agent Builder README](backend/mcp_servers/agent_builder/README.md)
+- [Local Control README](backend/mcp_servers/local_control/README.md)
+
+---
+
+## 🚀 Deployment Options
+
+### 1. Docker (Recommended)
+
+```bash
+# Quick start
+docker-compose up -d
+
+# Access at localhost:7860-7864
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete guide.
+
+### 2. Google Cloud Run
+
+```bash
+gcloud run deploy ultimate-mcp --source . --region us-central1
+```
+
+### 3. Railway / Render
+
+One-click deploy from GitHub. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+### 4. Self-Hosted (AWS EC2, DigitalOcean, etc.)
+
+Systemd services, Nginx reverse proxy. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+---
+
+## 🧪 Testing
+
+### Test Server Availability
+
+```powershell
+# Windows PowerShell
+Test-NetConnection -ComputerName localhost -Port 7860
+Test-NetConnection -ComputerName localhost -Port 7862
+Test-NetConnection -ComputerName localhost -Port 7863
+Test-NetConnection -ComputerName localhost -Port 7864
+```
+
+```bash
+# Linux/Mac
+curl http://localhost:7860
+curl http://localhost:7862
+curl http://localhost:7863
+curl http://localhost:7864
+```
+
+### View Logs
+
+```bash
+# All logs in backend/logs/
+tail -f backend/logs/mcp_system.log
+tail -f backend/logs/agent_builder.log
+tail -f backend/logs/n8n_automation.log
+```
+
+---
+
+## ⭐ System Ratings (Honest Assessment)
+
+| Category | Current | Potential | Notes |
+|----------|---------|-----------|-------|
+| **Automation Efficiency** | 5/10 | 9/10 | Not true MCP yet, needs protocol |
+| **Value Proposition** | 7/10 | 9/10 | Strong architecture, incomplete features |
+| **Problem Solving** | 7/10 | 9/10 | Creative approach, needs killer feature |
+| **Documentation** | 4/10 | 9/10 | Improving with detailed guides |
+| **Production Ready** | 3/10 | 9/10 | 3-4 months to enterprise-grade |
+
+**See [SYSTEM_ASSESSMENT.md](SYSTEM_ASSESSMENT.md) for detailed breakdown.**
+
+---
+
+## 🛣️ Roadmap
+
+### Phase 1: MCP Protocol (3-4 weeks)
+- [ ] Implement JSON-RPC 2.0
+- [ ] Add stdio/SSE transport
+- [ ] Create tool registration system
+- [ ] Claude Desktop integration
+
+### Phase 2: Feature Completion (3-4 weeks)
+- [ ] Real N8N workflow execution
+- [ ] Agent instantiation (ADK, CrewAI)
+- [ ] System command execution (secured)
+- [ ] AI-powered orchestrator routing
+
+### Phase 3: Enterprise Features (2-3 weeks)
+- [ ] Authentication & authorization
+- [ ] Multi-user support
+- [ ] Rate limiting
+- [ ] API documentation (OpenAPI)
+- [ ] Health checks & metrics
+
+### Phase 4: Production (2 weeks)
+- [ ] Docker optimization
+- [ ] CI/CD pipeline
+- [ ] Security hardening
+- [ ] Load testing
+- [ ] Monitoring & alerting
+
+**Total Timeline**: ~11-15 weeks to production-ready
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Areas needing help:
+
+- [ ] MCP protocol implementation (CRITICAL)
+- [ ] Feature completion (workflows, agents)
+- [ ] Documentation improvements
+- [ ] Testing infrastructure
+- [ ] UI/UX enhancements
+- [ ] Security hardening
+
+**See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.**
+
+---
+
+## 🐛 Known Issues
+
+### Python 3.13 Compatibility
+- ✅ **Fixed**: Install `audioop-lts` and downgrade `huggingface_hub<1.0.0`
+- See [SETUP_STATUS.md](SETUP_STATUS.md) for details
+
+### Anthropic Client Error
+- ✅ **Fixed**: Graceful handling of missing/invalid API keys
+- System falls back to keyword-based routing
+
+### Not True MCP Protocol
+- ⚠️ **Current**: Gradio/FastAPI HTTP interfaces
+- 🎯 **Target**: JSON-RPC 2.0 over stdio/SSE
+- 📅 **Timeline**: Phase 1 (3-4 weeks)
+
+---
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/W3JDev/ultimate-mcp-system/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/W3JDev/ultimate-mcp-system/discussions)
+- **Documentation**: Check `docs/` folder
+- **Logs**: `backend/logs/` directory
+
+---
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) file
+
+---
+
+## 🙏 Acknowledgments
+
+- **MCP 1st Birthday Hackathon** - Inspiration for this project
+- **Anthropic** - Claude API for AI-powered features
+- **Gradio** - UI framework
+- **N8N** - Workflow automation inspiration
+
+---
+
+## 📊 Project Stats
+
+- **Lines of Code**: ~5,000+
+- **Servers**: 4 independent MCPs
+- **Ports**: 7860-7864
+- **Frameworks**: ADK, CrewAI, A2A, Langbase, AGUI
+- **Status**: Beta / Prototype
+- **Target**: Enterprise MCP Orchestrator
+
+---
 
 **Built for MCP 1st Birthday Hackathon (Nov 14-30, 2025)**
+
+**Version**: 0.1.0-beta  
+**Last Updated**: November 16, 2025  
+**Maintainer**: W3JDev  
+**Repository**: https://github.com/W3JDev/ultimate-mcp-system

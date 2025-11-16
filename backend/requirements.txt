@@ -1,5 +1,5 @@
 # Core Framework
-gradio==6.0.0
+gradio==4.44.1
 fastapi==0.115.0
 uvicorn==0.30.0
 pydantic==2.9.0
@@ -10,25 +10,28 @@ openai==1.45.0
 
 # MCP Tools
 requests==2.32.3
-aiohttp==3.10.0
 
-# Agent Frameworks
-crewai==0.70.0
-langchain==0.3.0
-langchain-openai==0.2.0
-langchain-anthropic==0.2.0
+# Agent Frameworks (Note: CrewAI max Python 3.12)
+# crewai>=0.28.0  # Uncomment with Python 3.10-3.12
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-anthropic>=0.1.0
 
 # N8N Integration
-n8n-python-sdk==0.1.0
+# n8n-python-sdk==0.1.0  # May not exist
+
+# System Control
+psutil>=5.9.0
+pyautogui>=0.9.54
+pillow>=10.0.0
 
 # Browser Automation
-playwright==1.48.0
-selenium==4.25.0
+playwright>=1.40.0
 
 # Utilities
 python-dotenv==1.0.1
 pyyaml==6.0.2
 loguru==0.7.2
 
-# Database (optional)
-chromadb==0.5.0
+# Vector Database
+chromadb>=0.4.0
