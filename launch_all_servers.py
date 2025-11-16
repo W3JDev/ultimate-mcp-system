@@ -48,9 +48,9 @@ for server in servers:
     print(f"[PATH] {server['path']}")
     
     try:
-        # Use activated venv python
+        # Use activated .venv python
         proc = subprocess.Popen(
-            [r'venv\Scripts\python.exe', server['path']],
+            [r'.venv\Scripts\python.exe', server['path']],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,

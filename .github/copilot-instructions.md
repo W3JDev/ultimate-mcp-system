@@ -27,8 +27,8 @@ pip install 'huggingface_hub<1.0.0'  # Gradio 4.44.1 compatibility
 
 ### Starting Servers Locally
 ```bash
-# Activate venv (Windows)
-.\venv\Scripts\Activate.ps1
+# Activate .venv (Windows)
+.\.venv\Scripts\Activate.ps1
 
 # Individual server
 python backend/main.py  # Master on 7860

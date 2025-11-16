@@ -1,0 +1,114 @@
+# GitHub Copilot Instructions - {COMPONENT_NAME}
+
+## Component Overview
+
+**Purpose**: {Brief description of what this component does}
+**Type**: {MCP Server | Orchestrator | Utility | Integration | etc.}
+**Dependencies**: {Key dependencies and requirements}
+
+## Architecture Context
+
+**Integration Point**: {How this fits into the larger Ultimate MCP System}
+**Communication**: {How this communicates with other components}
+**Data Flow**: {Key inputs and outputs}
+
+## Development Conventions
+
+### Code Standards
+- **Language**: Python 3.13+ with type hints
+- **Logging**: Use loguru with emoji prefixes (✅ ❌ 🔍 📝 🚀)
+- **Error Handling**: Comprehensive try-catch with user-friendly messages
+- **Testing**: Unit tests for core functionality
+
+### File Structure
+```
+{component_folder}/
+├── server.py          # Main entry point
+├── README.md          # Component-specific documentation
+├── AGENT.md          # This file
+├── requirements.txt   # Component dependencies
+├── tests/            # Unit tests
+└── {other files}     # Component-specific modules
+```
+
+### Environment Setup
+- Use project root `.venv` for Python environment
+- Load environment variables via `python-dotenv`
+- Required environment variables: {List key env vars}
+
+## Component-Specific Instructions
+
+### {SECTION 1 - e.g., API Endpoints}
+{Detailed instructions for key functionality}
+
+### {SECTION 2 - e.g., Configuration}
+{Configuration patterns and examples}
+
+### {SECTION 3 - e.g., Error Handling}
+{Error scenarios and handling approaches}
+
+## Integration Requirements
+
+### MCP Protocol Compliance
+- {If applicable} Implements JSON-RPC 2.0 over stdio
+- {If applicable} Follows MCP tool specification
+- {If applicable} Provides proper schema definitions
+
+### Sponsor API Integration
+- {List relevant sponsor APIs}
+- Authentication patterns: {OAuth | API Key | etc.}
+- Rate limiting and cost controls
+
+## Debugging and Monitoring
+
+### Logging Patterns
+```python
+from loguru import logger
+logger.add("../../logs/{component_name}.log", rotation="1 day", retention="7 days")
+logger.info(f"✅ {action} completed")
+logger.error(f"❌ Error in {function}: {error}")
+```
+
+### Health Checks
+- {Health check endpoints or methods}
+- {Performance monitoring points}
+
+## Common Issues and Solutions
+
+### Issue 1: {Common problem}
+**Symptoms**: {What users see}
+**Solution**: {How to fix it}
+
+### Issue 2: {Another common problem}
+**Symptoms**: {What users see}
+**Solution**: {How to fix it}
+
+## Quick Reference
+
+### Development Commands
+```bash
+# Activate environment
+.\.venv\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run component
+python {main_file}.py
+
+# Run tests
+pytest tests/
+```
+
+### Key Files to Edit
+- `{file1}` - {purpose}
+- `{file2}` - {purpose}
+
+## Template Usage Instructions
+
+**For AI Agents**: Replace all `{PLACEHOLDER}` sections with component-specific information.
+**Keep Structure**: Maintain the section order and formatting for consistency across components.
+**Update Regularly**: Keep this file updated as the component evolves.
+
+---
+*Generated from AGENT.md.template - Last updated: {DATE}*
