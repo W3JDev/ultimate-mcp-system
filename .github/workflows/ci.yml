@@ -1,0 +1,127 @@
+name: CI - Lint and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    name: Lint Python Code
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black flake8 isort
+        
+    - name: Run black (formatting check)
+      run: |
+        black --check backend/ --exclude venv
+        
+    - name: Run isort (import sorting check)
+      run: |
+        isort --check-only backend/ --skip venv
+        
+    - name: Run flake8 (linting)
+      run: |
+        flake8 backend/ --exclude=venv --max-line-length=100 --extend-ignore=E203,W503
+      continue-on-error: true
+      
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+        
+    - name: Install Python 3.13 compatibility packages
+      if: matrix.python-version == '3.13'
+      run: |
+        pip install audioop-lts
+        pip install 'huggingface_hub<1.0.0'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install pytest pytest-cov pytest-asyncio httpx
+        
+    - name: Install Playwright browsers
+      run: |
+        playwright install chromium
+        playwright install-deps chromium
+        
+    - name: Create required directories
+      run: |
+        mkdir -p backend/logs
+        mkdir -p backend/memory
+        mkdir -p backend/mcp_servers/agent_builder/agents
+        
+    - name: Run tests
+      run: |
+        pytest tests/ -v --cov=backend --cov-report=xml --cov-report=term
+      continue-on-error: true
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+        
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety bandit
+        
+    - name: Run safety (dependency vulnerability check)
+      run: |
+        safety check --json || true
+      continue-on-error: true
+      
+    - name: Run bandit (security linting)
+      run: |
+        bandit -r backend/ -f json -o bandit-report.json || true
+      continue-on-error: true
+      
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+        retention-days: 30
