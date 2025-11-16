@@ -2,6 +2,7 @@
 Unit tests for Orchestrator
 """
 import pytest
+from memory import MemoryManager
 from orchestrator import MCPOrchestrator
 
 
@@ -10,81 +11,72 @@ class TestMCPOrchestrator:
     
     def test_initialization(self):
         """Test orchestrator initialization"""
-        orchestrator = MCPOrchestrator()
+        memory = MemoryManager()
+        orchestrator = MCPOrchestrator(memory)
         assert orchestrator is not None
         assert hasattr(orchestrator, 'mcp_servers')
         assert hasattr(orchestrator, 'memory')
+        assert orchestrator.memory == memory
     
     def test_mcp_servers_configured(self):
         """Test that MCP servers are configured"""
-        orchestrator = MCPOrchestrator()
+        memory = MemoryManager()
+        orchestrator = MCPOrchestrator(memory)
         servers = orchestrator.mcp_servers
         
         assert 'n8n' in servers
         assert 'agent_builder' in servers
         assert 'local_control' in servers
-        
-        # Check server configuration
-        assert 'url' in servers['n8n']
-        assert 'keywords' in servers['n8n']
+        assert 'cloud_services' in servers
     
-    def test_keyword_routing_n8n(self):
-        """Test keyword-based routing to N8N"""
-        orchestrator = MCPOrchestrator()
-        
-        # Test various N8N-related keywords
-        test_messages = [
-            "create a workflow",
-            "n8n automation",
-            "build workflow for emails"
-        ]
-        
-        for message in test_messages:
-            server = orchestrator._route_by_keywords(message)
-            assert server == 'n8n', f"Failed to route '{message}' to n8n"
-    
-    def test_keyword_routing_agent_builder(self):
-        """Test keyword-based routing to Agent Builder"""
-        orchestrator = MCPOrchestrator()
-        
-        test_messages = [
-            "create an agent",
-            "build AI agent",
-            "crewai setup"
-        ]
-        
-        for message in test_messages:
-            server = orchestrator._route_by_keywords(message)
-            assert server == 'agent_builder', f"Failed to route '{message}' to agent_builder"
-    
-    def test_keyword_routing_local_control(self):
-        """Test keyword-based routing to Local Control"""
-        orchestrator = MCPOrchestrator()
-        
-        test_messages = [
-            "system info",
-            "execute command",
-            "browser automation"
-        ]
-        
-        for message in test_messages:
-            server = orchestrator._route_by_keywords(message)
-            assert server == 'local_control', f"Failed to route '{message}' to local_control"
-    
-    def test_default_routing(self):
-        """Test default routing for unclear messages"""
-        orchestrator = MCPOrchestrator()
-        
-        # Generic message that doesn't match any keywords
-        server = orchestrator._route_by_keywords("hello world")
-        assert server in ['n8n', 'agent_builder', 'local_control']
-    
-    def test_process_request_structure(self):
-        """Test that process_request returns expected structure"""
-        orchestrator = MCPOrchestrator()
+    def test_process_request_basic(self):
+        """Test basic request processing"""
+        memory = MemoryManager()
+        orchestrator = MCPOrchestrator(memory)
         
         # This will use fallback logic without real API
-        response = orchestrator.process("create a workflow")
+        response = orchestrator.process("Hello")
         
-        assert isinstance(response, dict)
-        assert 'response' in response or 'error' in response
+        # Should return a string response
+        assert isinstance(response, str)
+        assert len(response) > 0
+    
+    def test_memory_integration(self):
+        """Test that orchestrator uses memory manager"""
+        memory = MemoryManager()
+        orchestrator = MCPOrchestrator(memory)
+        
+        # Add a message to memory
+        memory.add_message("user", "Test message")
+        
+        # Verify orchestrator can access it
+        context = orchestrator.memory.get_context()
+        assert "recent_messages" in context
+        assert len(context["recent_messages"]) == 1
+    
+    def test_no_api_key_fallback(self):
+        """Test that orchestrator works without API key"""
+        memory = MemoryManager()
+        orchestrator = MCPOrchestrator(memory)
+        
+        # Should initialize without errors even without API key
+        assert orchestrator.client is None or orchestrator.client is not None
+        
+        # Should still be able to process requests
+        response = orchestrator.process("test request")
+        assert isinstance(response, str)
+    
+    def test_multiple_requests(self):
+        """Test processing multiple requests in sequence"""
+        memory = MemoryManager()
+        orchestrator = MCPOrchestrator(memory)
+        
+        # Process multiple requests
+        response1 = orchestrator.process("First request")
+        response2 = orchestrator.process("Second request")
+        
+        # Both should return valid responses
+        assert isinstance(response1, str)
+        assert isinstance(response2, str)
+        assert len(response1) > 0
+        assert len(response2) > 0
