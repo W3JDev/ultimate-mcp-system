@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-'''
+"""
 Ultimate MCP System - Main Entry Point (FastAPI Version)
 Master Orchestrator that routes requests to appropriate MCP servers
-'''
+"""
 import os
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from dotenv import load_dotenv
 from loguru import logger
-from orchestrator import MCPOrchestrator
 from memory import MemoryManager
+from orchestrator import MCPOrchestrator
 
 # Load environment variables
 load_dotenv()
@@ -17,8 +18,9 @@ load_dotenv()
 # Configure logging
 logger.add("logs/mcp_system.log", rotation="1 day", retention="7 days")
 
+
 def main():
-    '''Initialize and launch the Ultimate MCP System'''
+    """Initialize and launch the Ultimate MCP System"""
 
     logger.info("🚀 Starting Ultimate MCP System")
 
@@ -39,8 +41,8 @@ def main():
 
     @app.get("/", response_class=HTMLResponse)
     async def root():
-        '''Serve welcome page'''
-        return '''
+        """Serve welcome page"""
+        return """
         <!DOCTYPE html>
         <html>
         <head>
@@ -96,60 +98,54 @@ def main():
             </div>
         </body>
         </html>
-        '''
+        """
 
     @app.get("/status")
     async def status():
-        '''Get system status'''
+        """Get system status"""
         return {
             "status": "running",
             "version": "1.0.0",
             "components": {
                 "orchestrator": "active",
                 "memory": "active",
-                "api": "active"
-            }
+                "api": "active",
+            },
         }
 
     @app.post("/process")
     async def process(request: dict):
-        '''Process a user request through the orchestrator'''
+        """Process a user request through the orchestrator"""
         message = request.get("message", "")
-        
+
         if not message:
             return {"error": "No message provided"}
-        
+
         logger.info(f"📨 User: {message}")
-        
+
         try:
             response = orchestrator.process(message)
             logger.info(f"� Assistant: {response[:100]}...")
-            
-            return {
-                "status": "success",
-                "message": message,
-                "response": response
-            }
+
+            return {"status": "success", "message": message, "response": response}
         except Exception as e:
             logger.error(f"❌ Error: {str(e)}")
-            return {
-                "status": "error",
-                "message": message,
-                "error": str(e)
-            }
+            return {"status": "error", "message": message, "error": str(e)}
 
     # Launch
     logger.info("✅ All systems ready")
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("[OK] Ultimate MCP System Running")
     print("[WEB] Access at: http://localhost:7860")
     print("[DOCS] API Docs: http://localhost:7860/docs")
     print("[GIT] Docs: https://github.com/W3JDev/ultimate-mcp-system")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
     return app
 
+
 if __name__ == "__main__":
     import uvicorn
+
     app = main()
     uvicorn.run(app, host="0.0.0.0", port=7860)

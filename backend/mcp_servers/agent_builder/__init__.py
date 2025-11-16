@@ -12,5 +12,5 @@ Multi-framework AI agent builder supporting:
 
 from .server import AgentBuilderMCP
 
-__all__ = ['AgentBuilderMCP']
-__version__ = '1.0.0'
+__all__ = ["AgentBuilderMCP"]
+__version__ = "1.0.0"
