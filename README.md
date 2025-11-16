@@ -13,20 +13,30 @@
 
 Ultimate MCP System is an **ambitious multi-server orchestration platform** that coordinates four specialized automation servers through a master orchestrator. Each server handles a specific domain: workflow automation, agent creation, system control, and cloud services.
 
-### ⚠️ Current Status: Beta / Prototype
+**Phase 2 introduces a tool-based architecture** with 17 callable MCP tools organized into categories (N8N, Agent, Local). All tools have complete schemas, parameters, validation, and can be discovered and executed via REST API.
+
+### ⚠️ Current Status: Phase 2 Complete
+
+**Phase 2 Completed (MCP Tools):**
+- ✅ **17 MCP Tools** implemented with standardized interface
+- ✅ **Tool Registry** with discovery, search, execution
+- ✅ **REST API** endpoints: `/tools/list`, `/tools/execute`
+- ✅ **Complete schemas** for all tools (parameters, returns, examples)
+- ✅ **Integration tests** passing for all tools
+- ✅ **3 Tool Categories**: N8N (4), Agent (6), Local (7)
 
 **What Works:**
 - ✅ All 4 servers running with Gradio UIs
 - ✅ Graceful error handling without API keys
 - ✅ Python 3.13 compatibility (via audioop-lts)
-- ✅ Basic keyword-based routing
+- ✅ AI-powered intent routing
 - ✅ Comprehensive logging system
+- ✅ Tool-based architecture ready for orchestration
 
 **What's Limited:**
 - ⚠️ Not true MCP protocol implementation (no JSON-RPC/stdio)
-- ⚠️ UI framework, not fully functional automation
 - ⚠️ Requires API keys for AI-powered features
-- ⚠️ Core features stubbed or in development
+- ⚠️ Cloud services tools not yet implemented
 
 **See [SYSTEM_ASSESSMENT.md](SYSTEM_ASSESSMENT.md) for detailed honest evaluation.**
 
@@ -100,6 +110,70 @@ python backend/mcp_servers/local_control/server.py
 - **N8N Automation**: http://localhost:7862
 - **Agent Builder**: http://localhost:7863
 - **Local Control**: http://localhost:7864
+
+---
+
+## 🔧 MCP Tools (Phase 2)
+
+### Tool Architecture
+
+All business logic has been converted to **17 callable MCP tools** with standardized interfaces:
+
+#### **N8N Tools** (4 tools)
+- `create_n8n_workflow` - Create workflows from natural language
+- `test_n8n_workflow` - Test workflows with validation
+- `deploy_n8n_workflow` - Deploy to N8N instance
+- `validate_n8n_workflow` - Validate workflow outputs
+
+#### **Agent Tools** (6 tools)
+- `create_adk_agent` - Create ADK agents
+- `create_crewai_team` - Create CrewAI multi-agent teams
+- `create_a2a_agent` - Create A2A protocol agents
+- `create_langbase_agent` - Create Langbase RAG agents
+- `create_agui_agent` - Create AGUI interface agents
+- `list_agents` - List all created agents
+
+#### **Local Control Tools** (7 tools)
+- `execute_system_command` - Execute shell commands
+- `list_processes` - List running processes
+- `kill_process` - Terminate processes
+- `list_files` - List directory contents
+- `read_file` - Read file contents
+- `open_url` - Open URLs in browser
+- `get_system_info` - Get system information
+
+### Using Tools via API
+
+```bash
+# List all tools
+curl http://localhost:7860/tools/list
+
+# List tools by category
+curl http://localhost:7860/tools/list?category=agent
+
+# Execute a tool
+curl -X POST http://localhost:7860/tools/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "get_system_info",
+    "params": {}
+  }'
+
+# Create an agent
+curl -X POST http://localhost:7860/tools/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "create_adk_agent",
+    "params": {
+      "name": "my_agent",
+      "model": "gpt-4",
+      "tools": ["github", "slack"],
+      "system_prompt": "You are a helpful assistant"
+    }
+  }'
+```
+
+See [backend/tools/README.md](backend/tools/README.md) for complete tool documentation.
 
 ---
 

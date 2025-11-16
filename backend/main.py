@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse
 from loguru import logger
 from memory import MemoryManager
 from orchestrator import MCPOrchestrator
+from tools import ToolRegistry, N8N_TOOLS, AGENT_TOOLS, LOCAL_TOOLS
 
 # Load environment variables
 load_dotenv()
@@ -35,6 +36,20 @@ def main():
     logger.info("📦 Initializing components...")
     memory = MemoryManager()
     orchestrator = MCPOrchestrator(memory)
+    
+    # Initialize tool registry
+    logger.info("🔧 Initializing tool registry...")
+    tool_registry = ToolRegistry()
+    
+    # Register all tools
+    for tool in N8N_TOOLS:
+        tool_registry.register(tool)
+    for tool in AGENT_TOOLS:
+        tool_registry.register(tool)
+    for tool in LOCAL_TOOLS:
+        tool_registry.register(tool)
+    
+    logger.info(f"✅ Registered {len(tool_registry)} tools")
 
     # Create FastAPI app
     app = FastAPI(title="Ultimate MCP System", version="1.0.0")
@@ -71,6 +86,8 @@ def main():
                         <li><code>GET /</code> - This welcome page</li>
                         <li><code>POST /process</code> - Send a request to the orchestrator</li>
                         <li><code>GET /status</code> - System status</li>
+                        <li><code>GET /tools/list</code> - List all available MCP tools</li>
+                        <li><code>POST /tools/execute</code> - Execute a specific tool</li>
                         <li><code>GET /docs</code> - Interactive API documentation</li>
                     </ul>
                     
@@ -82,11 +99,11 @@ def main():
                         <li>✅ FastAPI Server - REST API</li>
                     </ul>
                     
-                    <h3>Coming in Phase 2:</h3>
+                    <h3>Phase 2 Complete - MCP Tools:</h3>
                     <ul>
-                        <li>🔜 N8N Automation MCP</li>
-                        <li>🔜 Agent Builder MCP</li>
-                        <li>🔜 Local Control MCP</li>
+                        <li>✅ N8N Automation Tools (4 tools)</li>
+                        <li>✅ Agent Builder Tools (6 tools)</li>
+                        <li>✅ Local Control Tools (7 tools)</li>
                         <li>🔜 Cloud Services MCP</li>
                     </ul>
                 </div>
@@ -110,8 +127,38 @@ def main():
                 "orchestrator": "active",
                 "memory": "active",
                 "api": "active",
+                "tools": "active"
             },
+            "tools": {
+                "total": len(tool_registry),
+                "categories": tool_registry.get_categories()
+            }
         }
+
+    @app.get("/tools/list")
+    async def list_tools(category: str = None):
+        """List all available MCP tools"""
+        tools = tool_registry.list_tools(category=category)
+        return {
+            "status": "success",
+            "total": len(tools),
+            "category": category or "all",
+            "tools": tools
+        }
+
+    @app.post("/tools/execute")
+    async def execute_tool(request: dict):
+        """Execute a specific tool by name"""
+        tool_name = request.get("tool")
+        params = request.get("params", {})
+
+        if not tool_name:
+            return {"error": "No tool name provided"}
+
+        logger.info(f"🔧 Executing tool: {tool_name}")
+
+        result = tool_registry.execute_tool(tool_name, **params)
+        return result
 
     @app.post("/process")
     async def process(request: dict):
@@ -125,7 +172,7 @@ def main():
 
         try:
             response = orchestrator.process(message)
-            logger.info(f"� Assistant: {response[:100]}...")
+            logger.info(f"💬 Assistant: {response[:100]}...")
 
             return {"status": "success", "message": message, "response": response}
         except Exception as e:
