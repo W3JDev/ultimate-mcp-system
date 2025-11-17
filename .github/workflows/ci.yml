@@ -2,9 +2,9 @@ name: CI - Lint and Test
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ Lets-Coin, main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ Lets-Coin, main, develop ]
 
 jobs:
   lint:

@@ -86,7 +86,9 @@ def main():
 
         if init_response and "result" in init_response:
             server_info = init_response["result"].get("serverInfo", {})
-            print(f"   ✅ Connected to {server_info.get('name')} v{server_info.get('version')}")
+            print(
+                f"   ✅ Connected to {server_info.get('name')} v{server_info.get('version')}"
+            )
 
             # Send initialized notification
             client.send_request("notifications/initialized")
@@ -102,7 +104,9 @@ def main():
                 # Show first 10 tools
                 print("\n   Sample tools:")
                 for i, tool in enumerate(tools[:10], 1):
-                    print(f"   {i}. {tool['name']}: {tool.get('description', 'No description')[:60]}...")
+                    print(
+                        f"   {i}. {tool['name']}: {tool.get('description', 'No description')[:60]}..."
+                    )
 
                 # Test calling a custom tool
                 print("\n4. Testing tool call...")

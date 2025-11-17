@@ -11,14 +11,13 @@ import sys
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
-from loguru import logger
-
 from integrations import (
     GitHubMCPIntegration,
     MemoryMCPIntegration,
     PlaywrightMCPIntegration,
     RubeMCPIntegration,
 )
+from loguru import logger
 
 # Load environment variables
 load_dotenv()
@@ -175,9 +174,9 @@ class MCPHubServer:
                 for tool in tools:
                     tool_copy = tool.copy()
                     tool_copy["name"] = f"{name}_{tool['name']}"
-                    tool_copy[
-                        "description"
-                    ] = f"[{name.upper()}] {tool.get('description', '')}"
+                    tool_copy["description"] = (
+                        f"[{name.upper()}] {tool.get('description', '')}"
+                    )
                     all_tools.append(tool_copy)
 
                 logger.info(f"  ✅ {name}: {len(tools)} tools")
@@ -289,7 +288,10 @@ class MCPHubServer:
                             "enum": ["list", "read", "write"],
                             "description": "Operation to perform",
                         },
-                        "path": {"type": "string", "description": "File or directory path"},
+                        "path": {
+                            "type": "string",
+                            "description": "File or directory path",
+                        },
                         "content": {
                             "type": "string",
                             "description": "Content to write (for write operation)",
@@ -300,15 +302,23 @@ class MCPHubServer:
             },
         ]
 
-    def _call_custom_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _call_custom_tool(
+        self, tool_name: str, arguments: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Call a custom tool from this system"""
         # Import custom server modules
         try:
             if tool_name.startswith("create_n8n"):
                 return self._handle_n8n_tool(tool_name, arguments)
-            elif tool_name.startswith("create_adk") or tool_name.startswith("create_crewai"):
+            elif tool_name.startswith("create_adk") or tool_name.startswith(
+                "create_crewai"
+            ):
                 return self._handle_agent_tool(tool_name, arguments)
-            elif tool_name.startswith("execute_system") or tool_name.startswith("list_processes") or tool_name.startswith("file_operation"):
+            elif (
+                tool_name.startswith("execute_system")
+                or tool_name.startswith("list_processes")
+                or tool_name.startswith("file_operation")
+            ):
                 return self._handle_local_tool(tool_name, arguments)
             else:
                 raise ValueError(f"Unknown custom tool: {tool_name}")
@@ -316,7 +326,9 @@ class MCPHubServer:
             logger.error(f"❌ Error calling custom tool {tool_name}: {e}")
             return {"error": str(e)}
 
-    def _handle_n8n_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_n8n_tool(
+        self, tool_name: str, arguments: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Handle N8N workflow tools"""
         # Placeholder - would integrate with actual N8N MCP server
         return {
@@ -328,7 +340,9 @@ class MCPHubServer:
             ]
         }
 
-    def _handle_agent_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_agent_tool(
+        self, tool_name: str, arguments: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Handle agent builder tools"""
         # Placeholder - would integrate with actual Agent Builder MCP server
         return {
@@ -340,7 +354,9 @@ class MCPHubServer:
             ]
         }
 
-    def _handle_local_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_local_tool(
+        self, tool_name: str, arguments: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Handle local control tools"""
         # Placeholder - would integrate with actual Local Control MCP server
         return {

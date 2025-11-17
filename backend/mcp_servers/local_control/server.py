@@ -15,6 +15,12 @@ import psutil
 from dotenv import load_dotenv
 from loguru import logger
 
+# Import local modules
+sys.path.insert(0, str(Path(__file__).parent))
+from browser_automation import BrowserAutomation
+from file_operations import FileOperations
+from system_commands import SystemCommands
+
 # Load environment variables
 load_dotenv()
 
@@ -27,6 +33,9 @@ class LocalControlMCP:
 
     def __init__(self):
         self.system = platform.system()
+        self.system_cmds = SystemCommands()
+        self.browser = BrowserAutomation()
+        self.files = FileOperations()
         logger.info(f"💻 Local Control MCP initialized on {self.system}")
 
     # === System Commands ===

@@ -2,7 +2,7 @@ name: Deploy to Cloud
 
 on:
   push:
-    branches: [ main ]
+    branches: [ Lets-Coin, main ]
     tags:
       - 'v*'
   workflow_dispatch:
@@ -20,7 +20,7 @@ jobs:
   deploy-cloud-run:
     name: Deploy to Google Cloud Run
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/Lets-Coin' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
     
     steps:
     - name: Checkout code

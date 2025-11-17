@@ -3,14 +3,16 @@ Tool Registry - Manages all registered MCP tools
 """
 
 from typing import Dict, List, Optional
+
 from loguru import logger
+
 from .base import MCPTool, ToolSchema
 
 
 class ToolRegistry:
     """
     Central registry for all MCP tools
-    
+
     Provides tool discovery, registration, and execution
     """
 
@@ -21,14 +23,14 @@ class ToolRegistry:
             "n8n": [],
             "agent": [],
             "local": [],
-            "cloud": []
+            "cloud": [],
         }
         logger.info("📚 Tool Registry initialized")
 
     def register(self, tool: MCPTool) -> None:
         """
         Register a new tool
-        
+
         Args:
             tool: MCPTool instance to register
         """
@@ -48,10 +50,10 @@ class ToolRegistry:
     def get_tool(self, name: str) -> Optional[MCPTool]:
         """
         Get a tool by name
-        
+
         Args:
             name: Tool name
-            
+
         Returns:
             MCPTool instance or None if not found
         """
@@ -60,10 +62,10 @@ class ToolRegistry:
     def list_tools(self, category: Optional[str] = None) -> List[Dict]:
         """
         List all tools or tools in a specific category
-        
+
         Args:
             category: Optional category filter
-            
+
         Returns:
             List of tool schemas
         """
@@ -78,43 +80,37 @@ class ToolRegistry:
     def execute_tool(self, tool_name: str, **kwargs) -> Dict:
         """
         Execute a tool by name
-        
+
         Args:
             tool_name: Tool name
             **kwargs: Tool parameters
-            
+
         Returns:
             Execution result
         """
         tool = self.get_tool(tool_name)
 
         if not tool:
-            return {
-                "success": False,
-                "error": f"Tool '{tool_name}' not found"
-            }
+            return {"success": False, "error": f"Tool '{tool_name}' not found"}
 
         return tool.execute(**kwargs)
 
     def get_categories(self) -> Dict[str, int]:
         """
         Get tool categories with counts
-        
+
         Returns:
             Dictionary of category: count
         """
-        return {
-            category: len(tools)
-            for category, tools in self._categories.items()
-        }
+        return {category: len(tools) for category, tools in self._categories.items()}
 
     def search_tools(self, query: str) -> List[Dict]:
         """
         Search tools by name or description
-        
+
         Args:
             query: Search query
-            
+
         Returns:
             List of matching tool schemas
         """
@@ -123,9 +119,11 @@ class ToolRegistry:
 
         for tool in self._tools.values():
             schema = tool.schema
-            if (query in schema.name.lower() or
-                query in schema.display_name.lower() or
-                query in schema.description.lower()):
+            if (
+                query in schema.name.lower()
+                or query in schema.display_name.lower()
+                or query in schema.description.lower()
+            ):
                 matching_tools.append(tool.get_schema())
 
         return matching_tools

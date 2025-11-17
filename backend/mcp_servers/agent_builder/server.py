@@ -8,7 +8,12 @@ import json
 import os
 
 import gradio as gr
+from a2a_protocol import A2AProtocol
+from adk_integration import ADKIntegration
+from agui_interface import AGUIInterface
+from crewai_wrapper import CrewAIWrapper
 from dotenv import load_dotenv
+from langbase_connector import LangbaseConnector
 from loguru import logger
 
 # Load environment variables
@@ -23,28 +28,37 @@ class AgentBuilderMCP:
 
     def __init__(self):
         self.agents = {}  # Store created agents
-        logger.info("🤖 Agent Builder MCP initialized")
+
+        # Initialize framework integrations
+        self.adk = ADKIntegration()
+        self.a2a = A2AProtocol()
+        self.crewai = CrewAIWrapper()
+        self.langbase = LangbaseConnector()
+        self.agui = AGUIInterface()
+
+        logger.info("🤖 Agent Builder MCP initialized with all frameworks")
 
     # === ADK Agent ===
     def create_adk_agent(self, name, tools, model, system_prompt):
         """Create an ADK agent"""
         try:
-            agent_id = f"adk_{name}_{len(self.agents)}"
+            capabilities = tools.split(",") if tools else []
 
-            agent_config = {
-                "id": agent_id,
-                "type": "ADK",
-                "name": name,
-                "model": model,
-                "tools": tools.split(",") if tools else [],
-                "system_prompt": system_prompt,
-                "created_at": "2025-11-16",
-            }
+            result = self.adk.create_agent(
+                name=name,
+                description=system_prompt or f"ADK agent: {name}",
+                model=model,
+                capabilities=capabilities,
+            )
 
-            self.agents[agent_id] = agent_config
-            logger.info(f"✅ Created ADK agent: {agent_id}")
+            if result.get("success"):
+                agent_config = result["agent_config"]
+                self.agents[agent_config["agent_id"]] = agent_config
+                logger.info(f"✅ Created ADK agent: {agent_config['agent_id']}")
+                return json.dumps(agent_config, indent=2)
+            else:
+                return f"Error: {result.get('error', 'Unknown error')}"
 
-            return json.dumps(agent_config, indent=2)
         except Exception as e:
             logger.error(f"❌ ADK agent creation failed: {e}")
             return f"Error: {str(e)}"
@@ -53,25 +67,47 @@ class AgentBuilderMCP:
     def create_crewai_team(self, team_name, agents_json, tasks_json):
         """Create a CrewAI agent team"""
         try:
-            team_id = f"crew_{team_name}_{len(self.agents)}"
-
             # Parse JSON inputs
-            agents = json.loads(agents_json) if agents_json else []
-            tasks = json.loads(tasks_json) if tasks_json else []
+            agents_list = json.loads(agents_json) if agents_json else []
+            tasks_list = json.loads(tasks_json) if tasks_json else []
 
-            team_config = {
-                "id": team_id,
-                "type": "CrewAI",
-                "team_name": team_name,
-                "agents": agents,
-                "tasks": tasks,
-                "created_at": "2025-11-16",
-            }
+            # Build agents
+            agents = []
+            for agent_data in agents_list:
+                agent_result = self.crewai.create_agent(
+                    role=agent_data.get("role", "agent"),
+                    goal=agent_data.get("goal", ""),
+                    backstory=agent_data.get("backstory", "AI agent"),
+                    tools=agent_data.get("tools", []),
+                )
+                if agent_result.get("success"):
+                    agents.append(agent_result["agent"])
 
-            self.agents[team_id] = team_config
-            logger.info(f"✅ Created CrewAI team: {team_id}")
+            # Build tasks
+            tasks = []
+            for task_data in tasks_list:
+                task_result = self.crewai.create_task(
+                    description=task_data.get("description", ""),
+                    expected_output=task_data.get("expected_output", ""),
+                    agent_role=task_data.get("agent", ""),
+                )
+                if task_result.get("success"):
+                    tasks.append(task_result["task"])
 
-            return json.dumps(team_config, indent=2)
+            # Create crew
+            result = self.crewai.create_crew(
+                name=team_name, agents=agents, tasks=tasks, process="sequential"
+            )
+
+            if result.get("success"):
+                crew_config = result["crew"]
+                crew_id = crew_config["crew_id"]
+                self.agents[crew_id] = crew_config
+                logger.info(f"✅ Created CrewAI team: {crew_id}")
+                return json.dumps(crew_config, indent=2)
+            else:
+                return f"Error: {result.get('error', 'Unknown error')}"
+
         except Exception as e:
             logger.error(f"❌ CrewAI team creation failed: {e}")
             return f"Error: {str(e)}"
@@ -80,21 +116,31 @@ class AgentBuilderMCP:
     def create_a2a_agent(self, agent_name, protocol_version, endpoints):
         """Create an Agent-to-Agent protocol agent"""
         try:
-            agent_id = f"a2a_{agent_name}_{len(self.agents)}"
+            capabilities = ["messaging", "coordination"]
+            endpoint_list = endpoints.split(",") if endpoints else []
+            agent_id = f"a2a_{agent_name}"
 
             agent_config = {
-                "id": agent_id,
-                "type": "A2A",
                 "name": agent_name,
+                "capabilities": capabilities,
+                "endpoint": (
+                    endpoint_list[0] if endpoint_list else "http://localhost:8000"
+                ),
                 "protocol_version": protocol_version,
-                "endpoints": endpoints.split(",") if endpoints else [],
-                "created_at": "2025-11-16",
             }
 
-            self.agents[agent_id] = agent_config
-            logger.info(f"✅ Created A2A agent: {agent_id}")
+            result = self.a2a.register_agent(
+                agent_id=agent_id, agent_config=agent_config
+            )
 
-            return json.dumps(agent_config, indent=2)
+            if result.get("success"):
+                registered_agent = result["agent"]
+                self.agents[agent_id] = registered_agent
+                logger.info(f"✅ Created A2A agent: {agent_id}")
+                return json.dumps(registered_agent, indent=2)
+            else:
+                return f"Error: {result.get('error', 'Unknown error')}"
+
         except Exception as e:
             logger.error(f"❌ A2A agent creation failed: {e}")
             return f"Error: {str(e)}"
@@ -103,21 +149,38 @@ class AgentBuilderMCP:
     def create_langbase_agent(self, agent_name, memory_type, documents):
         """Create a Langbase memory-enabled agent"""
         try:
-            agent_id = f"langbase_{agent_name}_{len(self.agents)}"
+            # Create memory store
+            store_name = agent_name
+            store_result = self.langbase.create_memory_store(
+                name=store_name, embedding_model="text-embedding-ada-002"
+            )
+
+            if not store_result.get("success"):
+                return f"Error: {store_result.get('error', 'Unknown error')}"
+
+            # Add documents to memory
+            doc_list = documents.split(",") if documents else []
+            for doc in doc_list:
+                self.langbase.add_memory(
+                    store_name=store_name,
+                    content=f"Document: {doc}",
+                    metadata={"source": doc},
+                )
 
             agent_config = {
-                "id": agent_id,
-                "type": "Langbase",
+                "agent_id": f"langbase_{agent_name}",
                 "name": agent_name,
+                "memory_store": store_name,
                 "memory_type": memory_type,
-                "documents": documents.split(",") if documents else [],
-                "created_at": "2025-11-16",
+                "documents": doc_list,
+                "type": "Langbase",
             }
 
-            self.agents[agent_id] = agent_config
-            logger.info(f"✅ Created Langbase agent: {agent_id}")
+            self.agents[agent_config["agent_id"]] = agent_config
+            logger.info(f"✅ Created Langbase agent: {agent_config['agent_id']}")
 
             return json.dumps(agent_config, indent=2)
+
         except Exception as e:
             logger.error(f"❌ Langbase agent creation failed: {e}")
             return f"Error: {str(e)}"
@@ -126,21 +189,32 @@ class AgentBuilderMCP:
     def create_agui_agent(self, agent_name, ui_components, theme):
         """Create an AGUI visual interface agent"""
         try:
-            agent_id = f"agui_{agent_name}_{len(self.agents)}"
+            agent_id = f"agui_{agent_name}"
 
-            agent_config = {
-                "id": agent_id,
-                "type": "AGUI",
-                "name": agent_name,
-                "ui_components": ui_components.split(",") if ui_components else [],
-                "theme": theme,
-                "created_at": "2025-11-16",
-            }
+            # Determine layout from components
+            components = ui_components.split(",") if ui_components else []
+            layout = "chat" if "chat" in components else "dashboard"
 
-            self.agents[agent_id] = agent_config
-            logger.info(f"✅ Created AGUI agent: {agent_id}")
+            result = self.agui.create_interface(
+                name=agent_name, agent_id=agent_id, layout=layout, theme=theme
+            )
 
-            return json.dumps(agent_config, indent=2)
+            if result.get("success"):
+                interface_config = result["interface"]
+                agent_config = {
+                    "agent_id": agent_id,
+                    "name": agent_name,
+                    "type": "AGUI",
+                    "interface": interface_config,
+                    "components": components,
+                }
+
+                self.agents[agent_id] = agent_config
+                logger.info(f"✅ Created AGUI agent: {agent_id}")
+                return json.dumps(agent_config, indent=2)
+            else:
+                return f"Error: {result.get('error', 'Unknown error')}"
+
         except Exception as e:
             logger.error(f"❌ AGUI agent creation failed: {e}")
             return f"Error: {str(e)}"

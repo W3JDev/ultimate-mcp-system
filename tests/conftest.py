@@ -1,10 +1,12 @@
 """
 Pytest configuration and fixtures
 """
+
 import os
 import sys
-import pytest
 from pathlib import Path
+
+import pytest
 
 # Add backend directory to Python path
 backend_dir = Path(__file__).parent.parent / "backend"
@@ -23,26 +25,28 @@ def test_env():
         "ANTHROPIC_API_KEY": "test-key-anthropic",
         "OPENAI_API_KEY": "test-key-openai",
         "N8N_API_KEY": "test-key-n8n",
-        "N8N_BASE_URL": "http://localhost:5678"
+        "N8N_BASE_URL": "http://localhost:5678",
     }
 
 
 @pytest.fixture
 def mock_anthropic_client(monkeypatch):
     """Mock Anthropic client for testing"""
+
     class MockMessage:
         def __init__(self, content):
-            self.content = [type('obj', (object,), {'text': content})]
-    
+            self.content = [type("obj", (object,), {"text": content})]
+
     class MockMessages:
         def create(self, **kwargs):
             return MockMessage("Mocked AI response for testing")
-    
+
     class MockAnthropic:
         def __init__(self, *args, **kwargs):
             self.messages = MockMessages()
-    
+
     import anthropic
+
     monkeypatch.setattr(anthropic, "Anthropic", MockAnthropic)
     return MockAnthropic
 

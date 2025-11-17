@@ -2,7 +2,7 @@
 Memory Manager - Handles context and state management
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from loguru import logger
@@ -25,7 +25,7 @@ class MemoryManager:
             {
                 "role": role,
                 "content": content,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
 

@@ -4,11 +4,10 @@ Tests connection to external MCP servers
 """
 
 import json
+import os
+import sys
 import unittest
 from unittest.mock import MagicMock, patch
-
-import sys
-import os
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -63,7 +62,9 @@ class TestRubeMCPIntegration(unittest.TestCase):
 
         self.assertEqual(len(result), 3)
         self.assertIn("slack", result)
-        mock_call_tool.assert_called_once_with("RUBE_SEARCH_TOOLS", {"query": "messaging"})
+        mock_call_tool.assert_called_once_with(
+            "RUBE_SEARCH_TOOLS", {"query": "messaging"}
+        )
 
     @patch.object(RubeMCPIntegration, "call_tool")
     def test_get_app_actions(self, mock_call_tool):
@@ -97,7 +98,9 @@ class TestMemoryMCPIntegration(unittest.TestCase):
         result = self.integration.create_entities(entities)
 
         self.assertEqual(result["created"], 2)
-        mock_call_tool.assert_called_once_with("create_entities", {"entities": entities})
+        mock_call_tool.assert_called_once_with(
+            "create_entities", {"entities": entities}
+        )
 
     @patch.object(MemoryMCPIntegration, "call_tool")
     def test_search_nodes(self, mock_call_tool):
@@ -132,7 +135,10 @@ class TestGitHubMCPIntegration(unittest.TestCase):
     @patch.object(GitHubMCPIntegration, "call_tool")
     def test_create_issue(self, mock_call_tool):
         """Test creating an issue"""
-        mock_call_tool.return_value = {"number": 1, "url": "https://github.com/user/repo/issues/1"}
+        mock_call_tool.return_value = {
+            "number": 1,
+            "url": "https://github.com/user/repo/issues/1",
+        }
 
         result = self.integration.create_issue(
             "user/repo", title="Bug found", body="Description", labels=["bug"]
@@ -157,7 +163,9 @@ class TestPlaywrightMCPIntegration(unittest.TestCase):
         result = self.integration.navigate("https://example.com")
 
         self.assertTrue(result["success"])
-        mock_call_tool.assert_called_once_with("playwright_navigate", {"url": "https://example.com"})
+        mock_call_tool.assert_called_once_with(
+            "playwright_navigate", {"url": "https://example.com"}
+        )
 
     @patch.object(PlaywrightMCPIntegration, "call_tool")
     def test_click(self, mock_call_tool):
@@ -167,7 +175,9 @@ class TestPlaywrightMCPIntegration(unittest.TestCase):
         result = self.integration.click("#button")
 
         self.assertTrue(result["success"])
-        mock_call_tool.assert_called_once_with("playwright_click", {"selector": "#button"})
+        mock_call_tool.assert_called_once_with(
+            "playwright_click", {"selector": "#button"}
+        )
 
 
 class TestMCPHubServer(unittest.TestCase):

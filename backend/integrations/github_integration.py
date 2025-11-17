@@ -99,7 +99,9 @@ class GitHubMCPIntegration(BaseMCPIntegration):
         """
         return self.call_tool("search_repositories", {"query": query})
 
-    def get_file_contents(self, repo: str, path: str, ref: str = "main") -> Dict[str, Any]:
+    def get_file_contents(
+        self, repo: str, path: str, ref: str = "main"
+    ) -> Dict[str, Any]:
         """
         Get file contents from a repository
 
@@ -111,4 +113,6 @@ class GitHubMCPIntegration(BaseMCPIntegration):
         Returns:
             File contents
         """
-        return self.call_tool("get_file_contents", {"repo": repo, "path": path, "ref": ref})
+        return self.call_tool(
+            "get_file_contents", {"repo": repo, "path": path, "ref": ref}
+        )

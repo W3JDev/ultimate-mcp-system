@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse
 from loguru import logger
 from memory import MemoryManager
 from orchestrator import MCPOrchestrator
-from tools import ToolRegistry, N8N_TOOLS, AGENT_TOOLS, LOCAL_TOOLS
+from tools import AGENT_TOOLS, LOCAL_TOOLS, N8N_TOOLS, ToolRegistry
 
 # Load environment variables
 load_dotenv()
@@ -36,11 +36,11 @@ def main():
     logger.info("📦 Initializing components...")
     memory = MemoryManager()
     orchestrator = MCPOrchestrator(memory)
-    
+
     # Initialize tool registry
     logger.info("🔧 Initializing tool registry...")
     tool_registry = ToolRegistry()
-    
+
     # Register all tools
     for tool in N8N_TOOLS:
         tool_registry.register(tool)
@@ -48,7 +48,7 @@ def main():
         tool_registry.register(tool)
     for tool in LOCAL_TOOLS:
         tool_registry.register(tool)
-    
+
     logger.info(f"✅ Registered {len(tool_registry)} tools")
 
     # Create FastAPI app
@@ -127,12 +127,12 @@ def main():
                 "orchestrator": "active",
                 "memory": "active",
                 "api": "active",
-                "tools": "active"
+                "tools": "active",
             },
             "tools": {
                 "total": len(tool_registry),
-                "categories": tool_registry.get_categories()
-            }
+                "categories": tool_registry.get_categories(),
+            },
         }
 
     @app.get("/tools/list")
@@ -143,7 +143,7 @@ def main():
             "status": "success",
             "total": len(tools),
             "category": category or "all",
-            "tools": tools
+            "tools": tools,
         }
 
     @app.post("/tools/execute")
