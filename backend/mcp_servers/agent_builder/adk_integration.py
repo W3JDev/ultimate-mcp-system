@@ -49,6 +49,7 @@ class ADKIntegration:
             ),
             "temperature": 0.7,
             "max_tokens": 4096,
+            "agent_id": f"adk_{name.lower().replace(' ', '_')}",
         }
 
         return {

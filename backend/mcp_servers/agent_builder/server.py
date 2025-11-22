@@ -52,7 +52,7 @@ class AgentBuilderMCP:
             )
 
             if result.get("success"):
-                agent_config = result["agent_config"]
+                agent_config = result["agent"]
                 self.agents[agent_config["agent_id"]] = agent_config
                 logger.info(f"✅ Created ADK agent: {agent_config['agent_id']}")
                 return json.dumps(agent_config, indent=2)
@@ -226,6 +226,40 @@ class AgentBuilderMCP:
             return "No agents created yet."
 
         return json.dumps(list(self.agents.values()), indent=2)
+
+    def process(self, user_input: str) -> str:
+        """
+        Process natural language request (called by Orchestrator)
+        """
+        try:
+            text = user_input.lower()
+
+            if "list" in text and "agent" in text:
+                return self.list_agents()
+
+            elif "create" in text and "adk" in text:
+                name = "new_agent"
+                if "named " in text:
+                    name = text.split("named ")[1].split()[0]
+                return self.create_adk_agent(name, "github,search", "gpt-4", f"You are {name}")
+
+            elif "create" in text and ("crew" in text or "team" in text):
+                name = "dev_team"
+                if "named " in text:
+                    name = text.split("named ")[1].split()[0]
+                return self.create_crewai_team(name, '[]', '[]')
+
+            elif "create" in text and "a2a" in text:
+                return self.create_a2a_agent("connector_bot", "v2", "http://localhost:8000")
+
+            elif "create" in text and "langbase" in text:
+                return self.create_langbase_agent("memory_bot", "chromadb", "readme.md")
+
+            else:
+                return "Available commands: List agents, Create ADK agent, Create CrewAI team, Create A2A agent, Create Langbase agent"
+
+        except Exception as e:
+            return f"Error: {str(e)}"
 
 
 def create_ui():

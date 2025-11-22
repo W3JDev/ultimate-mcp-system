@@ -262,6 +262,60 @@ Python Version: {sys.version}
         except Exception as e:
             return f"Error: {str(e)}"
 
+    def process(self, user_input: str) -> str:
+        """
+        Process natural language request (called by Orchestrator)
+        """
+        try:
+            text = user_input.lower()
+
+            # System Info
+            if "system info" in text or "specs" in text:
+                return self.get_system_info()
+
+            # Process Management
+            elif "list processes" in text or "top processes" in text:
+                return self.list_processes()
+            elif "kill process" in text:
+                words = text.split()
+                for word in words:
+                    if word.isdigit():
+                        return self.kill_process(word)
+                return "Please specify a PID to kill"
+
+            # File Operations
+            elif "list files" in text or "ls" in text:
+                directory = ""
+                if " in " in text:
+                    directory = text.split(" in ")[1].strip()
+                return self.list_files(directory)
+            elif "read file" in text or "cat" in text:
+                if "read file " in text:
+                    filepath = text.split("read file ")[1].strip()
+                    return self.read_file(filepath)
+                return "Please specify a file to read"
+
+            # Browser
+            elif "open" in text and ("http" in text or ".com" in text):
+                words = text.split()
+                for word in words:
+                    if "http" in word or ".com" in word:
+                        return self.open_url(word)
+                return "Please specify a valid URL"
+
+            # Command Execution
+            elif "run" in text or "exec" in text or "command" in text:
+                cmd = text.replace("run", "").replace("exec", "").replace("command", "").strip()
+                if cmd:
+                    return self.execute_command(cmd)
+                return "Please specify a command to run"
+
+            else:
+                return "Available commands: System info, List processes, List files, Read file, Open URL, Run command"
+
+        except Exception as e:
+            return f"Error: {str(e)}"
+
 
 def create_ui():
     """Create the Gradio UI"""

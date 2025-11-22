@@ -8,8 +8,29 @@ import pytest
 import requests
 
 
+def check_server(port):
+    """Check if a server is running on the given port"""
+    try:
+        response = requests.get(f"http://localhost:{port}/", timeout=2)
+        return True
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        return False
+
+
+def all_servers_running():
+    """Check if all required servers are running"""
+    ports = [7860, 7862, 7863, 7864]
+    return all(check_server(port) for port in ports)
+
+
+skip_if_servers_not_running = pytest.mark.skipif(
+    not all_servers_running(),
+    reason="Requires all servers running (ports 7860, 7862, 7863, 7864)"
+)
+
+
 @pytest.mark.e2e
-@pytest.mark.skip(reason="Requires all servers running")
+@skip_if_servers_not_running
 class TestCompleteWorkflow:
     """Test complete end-to-end workflows"""
 
@@ -90,7 +111,7 @@ class TestCompleteWorkflow:
 
 
 @pytest.mark.e2e
-@pytest.mark.skip(reason="Requires all servers running")
+@skip_if_servers_not_running
 class TestServerAvailability:
     """Test that all servers are available"""
 

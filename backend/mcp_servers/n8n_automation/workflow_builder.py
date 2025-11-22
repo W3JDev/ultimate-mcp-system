@@ -52,7 +52,7 @@ class WorkflowBuilder:
 
         try:
             response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+                model="claude-3-5-haiku-20241022",
                 max_tokens=4000,
                 messages=[
                     {
@@ -64,7 +64,12 @@ class WorkflowBuilder:
             )
 
             # Parse workflow JSON from response
-            workflow_json = self._extract_json(response.content[0].text)
+            response_text = response.content[0].text if response.content else ""
+            workflow_json = self._extract_json(response_text)
+            
+            if not workflow_json:
+                logger.warning("⚠️ No valid JSON found, using template workflow")
+                return self._create_template_workflow(description)
 
             # Validate basic structure
             workflow = self._validate_workflow(workflow_json)
@@ -123,13 +128,17 @@ Generate complete, working N8N workflows."""
 
     def _extract_json(self, text: str) -> Dict:
         """Extract JSON from Claude response"""
-        # Remove markdown code blocks if present
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0]
-        elif "```" in text:
-            text = text.split("```")[1].split("```")[0]
+        try:
+            # Remove markdown code blocks if present
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0]
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0]
 
-        return json.loads(text.strip())
+            return json.loads(text.strip())
+        except (json.JSONDecodeError, IndexError, AttributeError) as e:
+            logger.error(f"JSON parsing failed: {e}")
+            return {}
 
     def _validate_workflow(self, workflow: Dict) -> Dict:
         """Validate basic workflow structure"""

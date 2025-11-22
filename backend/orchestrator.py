@@ -8,6 +8,19 @@ from typing import Any, Dict, Optional
 from anthropic import Anthropic
 from loguru import logger
 
+# Import MCP Servers
+import sys
+from pathlib import Path
+
+# Add server directories to path so internal imports (like 'import deployer') work
+sys.path.append(str(Path(__file__).parent / "mcp_servers" / "n8n_automation"))
+sys.path.append(str(Path(__file__).parent / "mcp_servers" / "agent_builder"))
+sys.path.append(str(Path(__file__).parent / "mcp_servers" / "local_control"))
+
+from mcp_servers.n8n_automation.server import N8NAutomationMCP
+from mcp_servers.agent_builder.server import AgentBuilderMCP
+from mcp_servers.local_control.server import LocalControlMCP
+
 
 class MCPOrchestrator:
     """Master orchestrator that routes user requests to appropriate MCP servers"""
@@ -28,13 +41,23 @@ class MCPOrchestrator:
             logger.info("⚠️ Using keyword-based routing (no Anthropic API key)")
             self.client = None
 
-        # Available MCP servers (will be expanded)
-        self.mcp_servers = {
-            "n8n": None,  # Will import when ready
-            "agent_builder": None,
-            "local_control": None,
-            "cloud_services": None,
-        }
+        # Available MCP servers
+        try:
+            self.mcp_servers = {
+                "n8n": N8NAutomationMCP(),
+                "agent_builder": AgentBuilderMCP(),
+                "local_control": LocalControlMCP(),
+                "cloud_services": None,
+            }
+            logger.info("✅ Connected to all MCP servers")
+        except Exception as e:
+            logger.error(f"❌ Failed to connect to MCP servers: {e}")
+            self.mcp_servers = {
+                "n8n": None,
+                "agent_builder": None,
+                "local_control": None,
+                "cloud_services": None,
+            }
 
         logger.info("🧠 Orchestrator initialized")
 
@@ -90,16 +113,26 @@ Respond with JSON: {{"target": "...", "confidence": 0.0-1.0, "params": {{}}}}"""
 
         try:
             response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+                model="claude-3-5-haiku-20241022",
                 max_tokens=500,
                 messages=[{"role": "user", "content": user_input}],
                 system=system_prompt,
             )
 
-            # Parse response
+            # Parse response with better error handling
             import json
+            import re
 
-            intent = json.loads(response.content[0].text)
+            response_text = response.content[0].text.strip()
+            
+            # Try to extract just the JSON part if there's extra text
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                json_text = json_match.group(0)
+            else:
+                json_text = response_text
+
+            intent = json.loads(json_text)
             logger.info(f"🎯 Intent: {intent['target']} ({intent['confidence']})")
             return intent
 
