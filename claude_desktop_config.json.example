@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "ultimate-mcp-n8n": {
+      "command": "python",
+      "args": [
+        "C:\\Users\\YOUR_USERNAME\\PROJECTS\\MCP\\ultimate-mcp-system\\backend\\mcp_servers\\n8n_automation\\server.py"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "your-anthropic-key-here",
+        "OPENAI_API_KEY": "your-openai-key-here",
+        "N8N_API_KEY": "your-n8n-key-here",
+        "N8N_BASE_URL": "http://localhost:5678",
+        "GITHUB_TOKEN": "your-github-token-here"
+      }
+    },
+    "ultimate-mcp-agent-builder": {
+      "command": "python",
+      "args": [
+        "C:\\Users\\YOUR_USERNAME\\PROJECTS\\MCP\\ultimate-mcp-system\\backend\\mcp_servers\\agent_builder\\server.py"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "your-anthropic-key-here",
+        "OPENAI_API_KEY": "your-openai-key-here",
+        "N8N_API_KEY": "your-n8n-key-here",
+        "N8N_BASE_URL": "http://localhost:5678"
+      }
+    },
+    "ultimate-mcp-local-control": {
+      "command": "python",
+      "args": [
+        "C:\\Users\\YOUR_USERNAME\\PROJECTS\\MCP\\ultimate-mcp-system\\backend\\mcp_servers\\local_control\\server.py"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "your-anthropic-key-here",
+        "OPENAI_API_KEY": "your-openai-key-here"
+      }
+    }
+  }
+}
