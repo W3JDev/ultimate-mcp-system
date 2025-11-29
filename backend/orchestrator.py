@@ -198,7 +198,7 @@ Respond with JSON: {{"target": "...", "confidence": 0.0-1.0, "params": {{}}}}"""
 2. Test it: Tell me "test this workflow"
 3. Deploy it: Tell me "deploy to N8N"
 
-**Connected to:** https://n8n.aixlabs.fun/ ✅
+**Connected to:** {os.getenv('N8N_BASE_URL', 'https://n8n-533751401713.us-central1.run.app')} ✅
 """
             return response
             
