@@ -598,4 +598,6 @@ if __name__ == "__main__":
     import uvicorn
 
     app = main()
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    # Use PORT from environment (Cloud Run compatibility)
+    port = int(os.getenv("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)
