@@ -339,7 +339,7 @@ Please specify which framework you want to use:
                 result = tool.execute(path=path)
                 files = result.get('files', [])
                 file_list = "\n".join([f"- {f['name']} ({'dir' if f.get('is_dir') else 'file'})" for f in files[:20]])
-                return f"""✅ **Files in {result.get('path', path')}:**
+                return f"""✅ **Files in {result.get('path', path)}:**
 
 {file_list}
 
