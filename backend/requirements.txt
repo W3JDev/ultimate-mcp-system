@@ -1,37 +1,40 @@
+# W3J MCP Hub - Production Dependencies
+
 # Core Framework
-gradio==4.44.1
 fastapi==0.115.0
-uvicorn==0.30.0
+uvicorn[standard]==0.30.0
 pydantic==2.9.0
+python-dotenv==1.0.1
 
-# AI APIs
-anthropic==0.34.0
-openai==1.45.0
+# AI Provider (Gemini 3 Pro)
+google-genai>=1.52.0
 
-# MCP Tools
+# Remote PC Bridge
+websockets>=12.0
+
+# HTTP Client
 requests==2.32.3
+httpx>=0.27.0
 
-# Agent Frameworks (Note: CrewAI max Python 3.12)
-# crewai>=0.28.0  # Uncomment with Python 3.10-3.12
-langchain>=0.1.0
-langchain-openai>=0.0.5
-langchain-anthropic>=0.1.0
+# Logging
+loguru==0.7.2
 
-# N8N Integration
-# n8n-python-sdk==0.1.0  # May not exist
+# Data Handling
+pyyaml==6.0.2
 
 # System Control
 psutil>=5.9.0
-pyautogui>=0.9.54
-pillow>=10.0.0
 
-# Browser Automation
-playwright>=1.40.0
+# N8N Integration (optional)
+# Already uses requests
 
-# Utilities
-python-dotenv==1.0.1
-pyyaml==6.0.2
-loguru==0.7.2
+# Agent Frameworks (optional - install if needed)
+# crewai>=0.80.0  # Requires Python 3.10-3.12
+# langchain>=0.3.0
+# chromadb>=0.4.0
 
-# Vector Database
-chromadb>=0.4.0
+# Browser Automation (optional)
+# playwright>=1.40.0
+
+# GUI Automation (optional)
+# pyautogui>=0.9.54
