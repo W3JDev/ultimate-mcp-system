@@ -81,6 +81,23 @@ services:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=admin
       - N8N_BASIC_AUTH_PASSWORD=admin
+      
+      # Enable MCP Client as Tool in AI Agents
+      - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+      
+      # MCP Server Environment Variables
+      - MCP_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MCP_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - MCP_DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - MCP_GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MCP_GITHUB_TOKEN=${GITHUB_TOKEN}
+      - MCP_PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+      - MCP_BRAVE_API_KEY=${MCP_BRAVE_API_KEY}
+      - MCP_REDDIT_CLIENT_ID=${REDDIT_API_APP_ID}
+      - MCP_REDDIT_CLIENT_SECRET=${REDDIT_API_APP_SECRET}
+      - MCP_TAVILY_API_KEY=${TAVILY_API_KEY}
+      - MCP_EXA_API_KEY=${EXA_API_KEY}
+      - MCP_SERPER_API_KEY=${SERPER_API_KEY}
     volumes:
       - n8n-data:/home/node/.n8n
     networks:

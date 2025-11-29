@@ -1,0 +1,50 @@
+{
+  "name": "Composio - Send Gmail",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start-node",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "nodeMode": "execute",
+        "toolName": "GMAIL_SEND_EMAIL",
+        "toolParameters": "={{ JSON.stringify({\n  \"to\": \"recipient@example.com\",\n  \"subject\": \"Test from n8n + Composio\",\n  \"body\": \"This email was sent using Composio MCP in n8n!\"\n}) }}"
+      },
+      "id": "mcp-gmail",
+      "name": "Send Email via Composio",
+      "type": "mcpClient",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "McpClientApi": "4Runr MCP Access account"
+      }
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Send Email via Composio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-11-22T00:00:00.000Z",
+  "versionId": "1"
+}
