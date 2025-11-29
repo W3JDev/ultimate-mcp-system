@@ -59,6 +59,19 @@ class ToolRegistry:
         """
         return self._tools.get(name)
 
+    def get_by_category(self, category: str) -> List[MCPTool]:
+        """
+        Get all tools in a specific category
+
+        Args:
+            category: Category name (n8n, agent, local, cloud)
+
+        Returns:
+            List of MCPTool instances in that category
+        """
+        tool_names = self._categories.get(category, [])
+        return [self._tools[name] for name in tool_names if name in self._tools]
+
     def list_tools(self, category: Optional[str] = None) -> List[Dict]:
         """
         List all tools or tools in a specific category
