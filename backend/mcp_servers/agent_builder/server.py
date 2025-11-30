@@ -63,6 +63,15 @@ class AgentBuilderMCP:
         else:
             logger.warning("⚠️ Composio integration not available")
             self.composio = None
+        
+        # Initialize Agent Runtime for execution & deployment
+        try:
+            from agent_runtime import AgentRuntime
+            self.runtime = AgentRuntime()
+            logger.success("✅ Agent Runtime initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ Agent Runtime not available: {e}")
+            self.runtime = None
 
         logger.info("🤖 Agent Builder MCP initialized with all frameworks")
 
@@ -288,6 +297,103 @@ class AgentBuilderMCP:
             return "No agents created yet."
 
         return json.dumps(list(self.agents.values()), indent=2)
+    
+    # === Agent Testing & Deployment ===
+    def test_agent_execution(self, agent_id: str, test_message: str):
+        """Test agent execution with real API call"""
+        try:
+            if not agent_id or not test_message:
+                return {"error": "Please provide agent ID and test message"}
+            
+            # Execute agent
+            result = self.adk.execute_agent(agent_id, test_message)
+            
+            return result
+        except Exception as e:
+            logger.error(f"❌ Test execution failed: {e}")
+            return {"error": str(e)}
+    
+    def deploy_agent_to_n8n(self, agent_id: str, n8n_url: str, n8n_key: str):
+        """Deploy agent as N8N workflow"""
+        try:
+            if not agent_id:
+                return {"error": "Please provide agent ID"}
+            
+            if agent_id not in self.agents:
+                return {"error": f"Agent '{agent_id}' not found"}
+            
+            if not self.runtime:
+                return {"error": "Agent Runtime not initialized"}
+            
+            agent_config = self.agents[agent_id]
+            
+            # Get N8N credentials
+            final_n8n_url = n8n_url or os.getenv("N8N_API_URL", "")
+            final_n8n_key = n8n_key or os.getenv("N8N_API_KEY", "")
+            
+            if not final_n8n_url or not final_n8n_key:
+                return {"error": "N8N API URL and Key required"}
+            
+            # Deploy to N8N (async operation)
+            import asyncio
+            result = asyncio.run(
+                self.runtime.deploy_agent_to_n8n(
+                    agent_config,
+                    final_n8n_url,
+                    final_n8n_key
+                )
+            )
+            
+            return result
+        except Exception as e:
+            logger.error(f"❌ Deployment failed: {e}")
+            return {"error": str(e)}
+    
+    def run_orchestrator_integration(self, agent_id: str, command: str):
+        """Run orchestrator to build, test, and deploy agent"""
+        try:
+            if not agent_id or not command:
+                return "Error: Please provide agent ID and command"
+            
+            # Load orchestrator
+            sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+            from orchestrator import MCPOrchestrator
+            from memory import MemoryManager
+            
+            # Initialize orchestrator
+            memory = MemoryManager()
+            orchestrator = MCPOrchestrator(memory)
+            
+            # Add agent context to memory
+            if agent_id in self.agents:
+                agent_info = self.agents[agent_id]
+                memory.add_message(
+                    "system",
+                    f"Agent {agent_id} configuration: {json.dumps(agent_info)}"
+                )
+            
+            # Build full orchestrator command
+            full_command = f"""
+Agent ID: {agent_id}
+Task: {command}
+
+Available actions:
+1. Test the agent with a sample message
+2. Deploy the agent to N8N as a workflow
+3. Verify deployment and get webhook URL
+4. Run end-to-end test
+
+Execute this complete workflow and report results.
+"""
+            
+            # Execute through orchestrator
+            result = orchestrator.process(full_command)
+            
+            return f"✅ Orchestrator Response:\n\n{result}"
+            
+        except Exception as e:
+            logger.error(f"❌ Orchestrator integration failed: {e}")
+            return f"Error: {str(e)}"
     
     # === Composio Integration ===
     def get_composio_status(self):
@@ -673,6 +779,84 @@ def create_ui():
                 mcp.connect_composio_account,
                 inputs=composio_connect_app,
                 outputs=composio_connect_result
+            )
+
+        with gr.Tab("🧪 Test & Deploy"):
+            gr.Markdown("""
+            ### Agent Testing & Deployment
+            - **Test Execution**: Run agent code in isolated environment
+            - **Deploy to N8N**: Convert agent to live workflow
+            - **Orchestrator Integration**: Connect agent to master orchestrator
+            """)
+            
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("#### 1. Test Agent Execution")
+                    test_agent_id = gr.Textbox(
+                        label="Agent ID",
+                        placeholder="adk_my_agent"
+                    )
+                    test_message = gr.Textbox(
+                        label="Test Message",
+                        placeholder="Hello, can you help me with...",
+                        lines=3
+                    )
+                    test_btn = gr.Button("🧪 Test Agent", variant="primary")
+                    test_output = gr.JSON(label="Execution Result")
+                
+                with gr.Column():
+                    gr.Markdown("#### 2. Deploy to N8N")
+                    deploy_agent_id = gr.Textbox(
+                        label="Agent ID",
+                        placeholder="adk_my_agent"
+                    )
+                    n8n_url = gr.Textbox(
+                        label="N8N API URL",
+                        value=os.getenv("N8N_API_URL", "")
+                    )
+                    n8n_key = gr.Textbox(
+                        label="N8N API Key",
+                        value=os.getenv("N8N_API_KEY", ""),
+                        type="password"
+                    )
+                    deploy_btn = gr.Button("🚀 Deploy to N8N", variant="primary")
+                    deploy_output = gr.JSON(label="Deployment Result")
+            
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("#### 3. Orchestrator Integration")
+                    orchestrator_agent_id = gr.Textbox(
+                        label="Agent ID",
+                        placeholder="adk_my_agent"
+                    )
+                    orchestrator_command = gr.Textbox(
+                        label="Orchestrator Command",
+                        placeholder="Build and test the agent, then create N8N workflow",
+                        lines=3
+                    )
+                    orchestrator_btn = gr.Button("🎯 Run Orchestrator", variant="primary")
+                    orchestrator_output = gr.Textbox(
+                        label="Orchestrator Response",
+                        lines=15
+                    )
+            
+            # Event handlers
+            test_btn.click(
+                mcp.test_agent_execution,
+                inputs=[test_agent_id, test_message],
+                outputs=test_output
+            )
+            
+            deploy_btn.click(
+                mcp.deploy_agent_to_n8n,
+                inputs=[deploy_agent_id, n8n_url, n8n_key],
+                outputs=deploy_output
+            )
+            
+            orchestrator_btn.click(
+                mcp.run_orchestrator_integration,
+                inputs=[orchestrator_agent_id, orchestrator_command],
+                outputs=orchestrator_output
             )
 
         with gr.Tab("📋 List Agents"):

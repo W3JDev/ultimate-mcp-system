@@ -15,6 +15,9 @@ COPY backend/requirements.txt /app/requirements.txt
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install Gradio and Composio
+RUN pip install --no-cache-dir gradio==5.7.1 composio-core composio-langchain
+
 # Install additional Gradio dependencies (skip audioop-lts on Python 3.11)
 RUN pip install --no-cache-dir \
     aiofiles==24.1.0 \

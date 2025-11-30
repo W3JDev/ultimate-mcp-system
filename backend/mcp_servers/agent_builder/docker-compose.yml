@@ -5,7 +5,7 @@ services:
       dockerfile: backend/mcp_servers/agent_builder/Dockerfile
     container_name: agent-builder-mcp
     env_file:
-      - ../../../.env
+      - .env
     ports:
       - "7863:7863"
     environment:
