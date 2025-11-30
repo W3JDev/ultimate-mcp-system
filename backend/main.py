@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse
 from loguru import logger
 from memory import MemoryManager
 from orchestrator import MCPOrchestrator
-from tools import AGENT_TOOLS, LOCAL_TOOLS, N8N_TOOLS, ToolRegistry
+from tools import AGENT_TOOLS, LOCAL_TOOLS, N8N_TOOLS, MCP_HUB_TOOLS, ToolRegistry
 
 # Load environment variables
 load_dotenv()
@@ -43,9 +43,14 @@ def main():
         tool_registry.register(tool)
     for tool in LOCAL_TOOLS:
         tool_registry.register(tool)
+    
+    # Register MCP Hub meta-tools
+    logger.info("🌟 Registering MCP Hub meta-tools...")
+    for tool in MCP_HUB_TOOLS:
+        tool_registry.register(tool)
 
     tool_count = len(tool_registry._tools)
-    logger.info(f"✅ Registered {tool_count} tools")
+    logger.info(f"✅ Registered {tool_count} tools (including {len(MCP_HUB_TOOLS)} MCP Hub meta-tools)")
 
     # Initialize components with registry
     logger.info("📦 Initializing components...")

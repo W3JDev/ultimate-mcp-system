@@ -2,10 +2,13 @@
 """
 Agent Builder MCP Server
 Multi-framework AI agent creation (ADK, CrewAI, A2A, Langbase, AGUI)
++ Composio integration for 100+ tools
 Port: 7863
 """
 import json
 import os
+import sys
+from pathlib import Path
 
 import gradio as gr
 from a2a_protocol import A2AProtocol
@@ -15,6 +18,19 @@ from crewai_wrapper import CrewAIWrapper
 from dotenv import load_dotenv
 from langbase_connector import LangbaseConnector
 from loguru import logger
+
+# Add parent directories to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Try importing Composio, fallback if not available
+try:
+    from integrations.composio_integration import ComposioIntegration
+    COMPOSIO_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"⚠️ Could not import Composio: {e}")
+    ComposioIntegration = None
+    COMPOSIO_AVAILABLE = False
 
 # Load environment variables
 load_dotenv()
@@ -35,14 +51,26 @@ class AgentBuilderMCP:
         self.crewai = CrewAIWrapper()
         self.langbase = LangbaseConnector()
         self.agui = AGUIInterface()
+        
+        # Initialize Composio integration
+        if COMPOSIO_AVAILABLE and ComposioIntegration:
+            try:
+                self.composio = ComposioIntegration()
+                logger.success("✅ Composio integration loaded")
+            except Exception as e:
+                logger.warning(f"⚠️ Composio not available: {e}")
+                self.composio = None
+        else:
+            logger.warning("⚠️ Composio integration not available")
+            self.composio = None
 
         logger.info("🤖 Agent Builder MCP initialized with all frameworks")
 
     # === ADK Agent ===
     def create_adk_agent(self, name, tools, model, system_prompt):
-        """Create an ADK agent"""
+        """Create an ADK agent with Vertex AI"""
         try:
-            capabilities = tools.split(",") if tools else []
+            capabilities = [c.strip() for c in tools.split(",")] if tools else []
 
             result = self.adk.create_agent(
                 name=name,
@@ -62,6 +90,40 @@ class AgentBuilderMCP:
         except Exception as e:
             logger.error(f"❌ ADK agent creation failed: {e}")
             return f"Error: {str(e)}"
+    
+    def execute_adk_agent(self, agent_id, user_message):
+        """Execute ADK agent with REAL Vertex AI call"""
+        try:
+            if not agent_id or not user_message:
+                return "Error: Please provide both agent ID and message"
+            
+            result = self.adk.execute_agent(agent_id, user_message)
+            
+            if result.get("success"):
+                response = f"✅ Agent: {result['agent_name']}\n\n"
+                response += f"Response:\n{result['response']}\n\n"
+                response += f"Model: {result['model']}\n"
+                response += f"Tokens: {result['usage']['input_tokens']} in, {result['usage']['output_tokens']} out\n"
+                response += f"Conversation length: {result['conversation_length']} messages"
+                return response
+            else:
+                return f"❌ Error: {result.get('error', 'Unknown error')}"
+        
+        except Exception as e:
+            logger.error(f"❌ Agent execution failed: {e}")
+            return f"Error: {str(e)}"
+    
+    def list_adk_agents(self):
+        """List all ADK agents"""
+        try:
+            result = self.adk.list_agents()
+            if result.get("success"):
+                return result["agents"]
+            else:
+                return {"error": "Failed to list agents"}
+        except Exception as e:
+            logger.error(f"❌ Failed to list agents: {e}")
+            return {"error": str(e)}
 
     # === CrewAI Team ===
     def create_crewai_team(self, team_name, agents_json, tasks_json):
@@ -226,6 +288,100 @@ class AgentBuilderMCP:
             return "No agents created yet."
 
         return json.dumps(list(self.agents.values()), indent=2)
+    
+    # === Composio Integration ===
+    def get_composio_status(self):
+        """Get Composio integration status"""
+        if not self.composio:
+            return json.dumps({"error": "Composio not initialized"}, indent=2)
+        
+        try:
+            status = self.composio.get_integration_status()
+            return json.dumps(status, indent=2)
+        except Exception as e:
+            logger.error(f"❌ Composio status check failed: {e}")
+            return json.dumps({"error": str(e)}, indent=2)
+    
+    def list_composio_apps(self):
+        """List available Composio apps"""
+        if not self.composio:
+            return json.dumps({"error": "Composio not initialized"}, indent=2)
+        
+        try:
+            apps = self.composio.list_available_apps()
+            return json.dumps(apps, indent=2)
+        except Exception as e:
+            logger.error(f"❌ Failed to list apps: {e}")
+            return json.dumps({"error": str(e)}, indent=2)
+    
+    def search_composio_tools(self, query):
+        """Search Composio tools by keyword"""
+        if not self.composio:
+            return json.dumps({"error": "Composio not initialized"}, indent=2)
+        
+        if not query:
+            return json.dumps({"error": "Please provide a search query"}, indent=2)
+        
+        try:
+            results = self.composio.search_tools(query)
+            return json.dumps(results, indent=2)
+        except Exception as e:
+            logger.error(f"❌ Search failed: {e}")
+            return json.dumps({"error": str(e)}, indent=2)
+    
+    def list_composio_app_actions(self, app_key):
+        """List actions for a specific Composio app"""
+        if not self.composio:
+            return json.dumps({"error": "Composio not initialized"}, indent=2)
+        
+        if not app_key:
+            return json.dumps({"error": "Please provide an app key"}, indent=2)
+        
+        try:
+            actions = self.composio.list_app_actions(app_key)
+            return json.dumps(actions, indent=2)
+        except Exception as e:
+            logger.error(f"❌ Failed to list actions: {e}")
+            return json.dumps({"error": str(e)}, indent=2)
+    
+    def execute_composio_action(self, app_key, action_key, parameters_json):
+        """Execute a Composio action"""
+        if not self.composio:
+            return json.dumps({"error": "Composio not initialized"}, indent=2)
+        
+        if not all([app_key, action_key, parameters_json]):
+            return json.dumps({"error": "Please provide app_key, action_key, and parameters"}, indent=2)
+        
+        try:
+            # Parse parameters JSON
+            parameters = json.loads(parameters_json)
+            
+            result = self.composio.execute_action(
+                app_key=app_key,
+                action_key=action_key,
+                parameters=parameters
+            )
+            return json.dumps(result, indent=2)
+        except json.JSONDecodeError:
+            return json.dumps({"error": "Invalid JSON in parameters"}, indent=2)
+        except Exception as e:
+            logger.error(f"❌ Action execution failed: {e}")
+            return json.dumps({"error": str(e)}, indent=2)
+    
+    def connect_composio_account(self, app_key):
+        """Generate OAuth URL to connect an account"""
+        if not self.composio:
+            return json.dumps({"error": "Composio not initialized"}, indent=2)
+        
+        if not app_key:
+            return json.dumps({"error": "Please provide an app key"}, indent=2)
+        
+        try:
+            result = self.composio.connect_account(app_key)
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            logger.error(f"❌ Connection failed: {e}")
+            return json.dumps({"error": str(e)}, indent=2)
 
     def process(self, user_input: str) -> str:
         """
@@ -267,7 +423,7 @@ def create_ui():
 
     mcp = AgentBuilderMCP()
 
-    with gr.Blocks(theme=gr.themes.Soft(), title="Agent Builder MCP") as demo:
+    with gr.Blocks(title="Agent Builder MCP") as demo:
         gr.Markdown(
             """
         # 🤖 Agent Builder MCP
@@ -277,29 +433,70 @@ def create_ui():
         """
         )
 
-        with gr.Tab("🔧 ADK Agent"):
-            gr.Markdown("### Create AI Development Kit (ADK) Agent")
-            adk_name = gr.Textbox(label="Agent Name", placeholder="my_assistant")
-            adk_tools = gr.Textbox(
-                label="Tools (comma-separated)", placeholder="github,slack,gmail"
-            )
-            adk_model = gr.Dropdown(
-                choices=["gpt-4", "gpt-3.5-turbo", "claude-3-opus", "claude-3-sonnet"],
-                label="Model",
-                value="gpt-4",
-            )
-            adk_prompt = gr.Textbox(
-                label="System Prompt",
-                placeholder="You are a helpful coding assistant...",
-                lines=3,
-            )
-            adk_btn = gr.Button("Create ADK Agent", variant="primary")
-            adk_output = gr.Code(label="Agent Configuration", language="json")
+        with gr.Tab("🔧 ADK Agent (Vertex AI)"):
+            gr.Markdown("### Create & Execute AI Development Kit (ADK) Agent with Vertex AI Anthropic")
+            
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("#### Create Agent")
+                    adk_name = gr.Textbox(label="Agent Name", placeholder="my_assistant")
+                    adk_tools = gr.Textbox(
+                        label="Capabilities (comma-separated)", 
+                        placeholder="web_search,code_execution,file_operations"
+                    )
+                    adk_model = gr.Dropdown(
+                        choices=[
+                            "claude-3-5-sonnet-20241022",
+                            "claude-3-opus-20240229",
+                            "claude-3-sonnet-20240229",
+                            "claude-3-haiku-20240307"
+                        ],
+                        label="Claude Model (Vertex AI)",
+                        value="claude-3-5-sonnet-20241022",
+                    )
+                    adk_prompt = gr.Textbox(
+                        label="System Prompt",
+                        placeholder="You are a helpful assistant that...",
+                        lines=3,
+                    )
+                    adk_btn = gr.Button("Create ADK Agent", variant="primary")
+                    adk_output = gr.Code(label="Agent Configuration", language="json")
+                    
+                with gr.Column():
+                    gr.Markdown("#### Execute Agent")
+                    adk_agent_id = gr.Textbox(
+                        label="Agent ID", 
+                        placeholder="adk_my_assistant"
+                    )
+                    adk_message = gr.Textbox(
+                        label="Your Message",
+                        placeholder="Write a Python function to calculate fibonacci...",
+                        lines=3
+                    )
+                    adk_exec_btn = gr.Button("Execute Agent", variant="primary")
+                    adk_response = gr.Textbox(
+                        label="Agent Response",
+                        lines=10,
+                        interactive=False
+                    )
+                    adk_list_btn = gr.Button("List All Agents")
+                    adk_agents_list = gr.JSON(label="Active Agents")
 
             adk_btn.click(
                 mcp.create_adk_agent,
                 inputs=[adk_name, adk_tools, adk_model, adk_prompt],
                 outputs=adk_output,
+            )
+            
+            adk_exec_btn.click(
+                mcp.execute_adk_agent,
+                inputs=[adk_agent_id, adk_message],
+                outputs=adk_response
+            )
+            
+            adk_list_btn.click(
+                mcp.list_adk_agents,
+                outputs=adk_agents_list
             )
 
         with gr.Tab("👥 CrewAI Team"):
@@ -385,6 +582,97 @@ def create_ui():
                 mcp.create_agui_agent,
                 inputs=[agui_name, agui_components, agui_theme],
                 outputs=agui_output,
+            )
+
+        with gr.Tab("🔌 Composio Tools"):
+            gr.Markdown("""
+            ### Composio Integration - Connect 100+ Tools
+            **Productivity**: Gmail, Slack, Notion, Trello, Asana  
+            **Dev Tools**: GitHub, GitLab, Jira, Linear  
+            **Data**: Google Sheets, Airtable, PostgreSQL  
+            **More**: Calendar, Drive, Dropbox, Zapier, etc.
+            """)
+            
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("#### Status & Discovery")
+                    composio_status_btn = gr.Button("Check Status", variant="secondary")
+                    composio_status = gr.JSON(label="Integration Status")
+                    
+                    composio_search = gr.Textbox(
+                        label="Search Tools",
+                        placeholder="email, calendar, slack, github..."
+                    )
+                    composio_search_btn = gr.Button("Search", variant="primary")
+                    composio_search_results = gr.JSON(label="Search Results")
+                    
+                    composio_list_apps_btn = gr.Button("List All Apps")
+                    composio_apps = gr.JSON(label="Available Apps (top 50)")
+                
+                with gr.Column():
+                    gr.Markdown("#### App Actions & Execution")
+                    composio_app_key = gr.Textbox(
+                        label="App Key",
+                        placeholder="gmail, slack, github..."
+                    )
+                    composio_actions_btn = gr.Button("Get Actions")
+                    composio_actions = gr.JSON(label="Available Actions")
+                    
+                    gr.Markdown("##### Execute Action")
+                    composio_action_key = gr.Textbox(
+                        label="Action Key",
+                        placeholder="GMAIL_SEND_EMAIL, SLACK_POST_MESSAGE..."
+                    )
+                    composio_parameters = gr.Code(
+                        label="Parameters (JSON)",
+                        value='{\n  "to": "user@example.com",\n  "subject": "Hello",\n  "body": "Test"\n}',
+                        language="json",
+                        lines=5
+                    )
+                    composio_exec_btn = gr.Button("Execute Action", variant="primary")
+                    composio_exec_result = gr.JSON(label="Execution Result")
+                    
+                    gr.Markdown("##### Connect Account")
+                    composio_connect_app = gr.Textbox(
+                        label="App to Connect",
+                        placeholder="gmail, slack, github..."
+                    )
+                    composio_connect_btn = gr.Button("Generate Auth URL")
+                    composio_connect_result = gr.JSON(label="Connection Info")
+            
+            # Wire up Composio events
+            composio_status_btn.click(
+                mcp.get_composio_status,
+                outputs=composio_status
+            )
+            
+            composio_search_btn.click(
+                mcp.search_composio_tools,
+                inputs=composio_search,
+                outputs=composio_search_results
+            )
+            
+            composio_list_apps_btn.click(
+                mcp.list_composio_apps,
+                outputs=composio_apps
+            )
+            
+            composio_actions_btn.click(
+                mcp.list_composio_app_actions,
+                inputs=composio_app_key,
+                outputs=composio_actions
+            )
+            
+            composio_exec_btn.click(
+                mcp.execute_composio_action,
+                inputs=[composio_app_key, composio_action_key, composio_parameters],
+                outputs=composio_exec_result
+            )
+            
+            composio_connect_btn.click(
+                mcp.connect_composio_account,
+                inputs=composio_connect_app,
+                outputs=composio_connect_result
             )
 
         with gr.Tab("📋 List Agents"):

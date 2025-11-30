@@ -8,6 +8,7 @@ from .base import MCPTool, ToolParameter, ToolSchema
 from .local_tools import LOCAL_TOOLS
 from .n8n_tools import N8N_TOOLS
 from .registry import ToolRegistry
+from .mcp_hub_tools import MCP_HUB_TOOLS
 
 __all__ = [
     "ToolRegistry",
@@ -17,4 +18,5 @@ __all__ = [
     "N8N_TOOLS",
     "AGENT_TOOLS",
     "LOCAL_TOOLS",
+    "MCP_HUB_TOOLS",
 ]

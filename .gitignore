@@ -1,4 +1,20 @@
+# ============================================
+# CRITICAL: Secrets & Credentials
+# ============================================
+.env
+.env.local
+.env.*.local
+*.env
+credentials.json
+*_key.json
+*.pem
+*.key
+*.token
+*_secret.txt
+
+# ============================================
 # Python
+# ============================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -7,31 +23,73 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+*.egg
 venv/
 env/
 .venv
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Environment
-.env
-.env.local
-*.env
+# ============================================
+# Testing & Coverage
+# ============================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
 
-# IDE
+# ============================================
+# IDE & Editors
+# ============================================
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
 
+# ============================================
 # Logs
+# ============================================
 logs/
 *.log
+backend/logs/*.log
+*.log.*
 
-# OS
+# ============================================
+# OS Files
+# ============================================
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Project specific
+# ============================================
+# Docker
+# ============================================
+docker-compose.override.yml
+.dockerignore
+
+# ============================================
+# Project Specific
+# ============================================
 browser_profile/
 storage/
 screenshots/
 temp/
+archived/
+backup/
+backend/pids/*.pid
+
+# ============================================
+# Node/NPM (if using)
+# ============================================
+node_modules/
+package-lock.json
+yarn.lock

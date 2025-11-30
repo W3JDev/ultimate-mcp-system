@@ -1,36 +1,33 @@
 """
-ADK Integration - Using Gemini 3 Pro instead of Claude
+ADK Integration - AI Development Kit integration using Anthropic API
 """
 
 import os
 from typing import Any, Dict, Optional, List
-from google import genai
-from google.genai import types
+from anthropic import Anthropic
 
 from loguru import logger
 
 
 class ADKIntegration:
-    """ADK (AI Development Kit) integration for agent building with Gemini 3 Pro"""
+    """ADK (AI Development Kit) integration for agent building with Anthropic API"""
 
     def __init__(self):
-        """Initialize ADK integration with Gemini 3 Pro via Vertex AI"""
-        self.project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "stellar-state-471406-f8")
-        self.location = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
-        self.model_id = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+        """Initialize ADK integration with Anthropic API"""
+        api_key = os.getenv("ANTHROPIC_API_KEY")
         
-        # Initialize Gemini client
-        try:
-            self.client = genai.Client(
-                vertexai=True,
-                project=self.project_id,
-                location=self.location
-            )
-            logger.success(f"✅ ADK initialized with Gemini 3 Pro (Project: {self.project_id})")
-        except Exception as e:
-            logger.error(f"❌ Failed to initialize Gemini client: {e}")
-            logger.info("💡 Run: gcloud auth application-default login --project=stellar-state-471406-f8")
+        # Initialize Anthropic client
+        if not api_key:
+            logger.error("❌ ANTHROPIC_API_KEY not found in environment")
+            logger.info("💡 Add ANTHROPIC_API_KEY to your .env file")
             self.client = None
+        else:
+            try:
+                self.client = Anthropic(api_key=api_key)
+                logger.success(f"✅ ADK initialized with Anthropic API")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize Anthropic client: {e}")
+                self.client = None
         
         # Store active agents with conversation history
         self.agents = {}
@@ -41,7 +38,7 @@ class ADKIntegration:
         name: str,
         description: str,
         capabilities: list,
-        model: str = "gemini-2.0-flash-exp",
+        model: str = "claude-3-5-sonnet-20241022",
     ) -> Dict[str, Any]:
         """
         Create an ADK agent
@@ -50,7 +47,7 @@ class ADKIntegration:
             name: Agent name
             description: Agent description
             capabilities: List of agent capabilities
-            model: Gemini model to use
+            model: Claude model to use
 
         Returns:
             Agent configuration
@@ -84,7 +81,7 @@ class ADKIntegration:
             "success": True,
             "agent": agent_config,
             "agent_id": agent_id,
-            "message": f"ADK agent '{name}' created successfully with Gemini 3 Pro",
+            "message": f"ADK agent '{name}' created successfully with Vertex AI",
         }
 
     def _get_tools_for_capabilities(self, capabilities: list) -> list:
@@ -110,7 +107,7 @@ class ADKIntegration:
         """Generate system prompt for agent"""
         capabilities_text = ", ".join(capabilities)
 
-        return f"""You are {name}, an AI agent.
+        return f"""You are {name}, an AI agent built with ADK.
 
 Description: {description}
 
@@ -125,7 +122,7 @@ You are helpful, accurate, and follow user instructions precisely. Always explai
         conversation_history: Optional[List[Dict]] = None
     ) -> Dict[str, Any]:
         """
-        Execute agent with REAL Gemini 3 Pro API call
+        Execute agent with REAL Vertex AI Anthropic API call
 
         Args:
             agent_id: Agent ID
@@ -138,7 +135,7 @@ You are helpful, accurate, and follow user instructions precisely. Always explai
         if not self.client:
             return {
                 "success": False,
-                "error": "Gemini client not initialized. Run: gcloud auth application-default login"
+                "error": "Vertex AI client not initialized. Run: gcloud auth application-default login"
             }
         
         if agent_id not in self.agents:
@@ -151,27 +148,31 @@ You are helpful, accurate, and follow user instructions precisely. Always explai
         logger.info(f"🤖 Executing agent: {agent['name']}")
         
         try:
-            # Build full prompt with system instructions
-            full_prompt = f"{agent['system_prompt']}\n\nUser: {user_message}\n\nAssistant:"
+            # Build conversation history
+            messages = conversation_history or agent.get("conversation_history", [])
+            messages.append({
+                "role": "user",
+                "content": user_message
+            })
             
-            # Call Gemini API
-            response = self.client.models.generate_content(
+            # Call Anthropic API directly
+            response = self.client.messages.create(
                 model=agent["model"],
-                contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    temperature=agent["temperature"],
-                    max_output_tokens=agent["max_tokens"],
-                )
+                max_tokens=agent["max_tokens"],
+                temperature=agent["temperature"],
+                system=agent["system_prompt"],
+                messages=messages
             )
             
             # Extract response
-            assistant_message = response.text
+            assistant_message = response.content[0].text
             
             # Update conversation history
-            history = agent.get("conversation_history", [])
-            history.append({"role": "user", "content": user_message})
-            history.append({"role": "assistant", "content": assistant_message})
-            agent["conversation_history"] = history[-10:]  # Keep last 10 messages
+            messages.append({
+                "role": "assistant",
+                "content": assistant_message
+            })
+            agent["conversation_history"] = messages[-10:]  # Keep last 10 messages
             
             logger.success(f"✅ Agent {agent['name']} responded successfully")
             
@@ -182,10 +183,10 @@ You are helpful, accurate, and follow user instructions precisely. Always explai
                 "user_message": user_message,
                 "response": assistant_message,
                 "model": agent["model"],
-                "conversation_length": len(history),
+                "conversation_length": len(messages),
                 "usage": {
-                    "model": agent["model"],
-                    "prompt_length": len(full_prompt),
+                    "input_tokens": response.usage.input_tokens,
+                    "output_tokens": response.usage.output_tokens,
                 }
             }
             
