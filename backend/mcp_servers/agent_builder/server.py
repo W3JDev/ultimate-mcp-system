@@ -8,6 +8,7 @@ Port: 7863
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import gradio as gr
@@ -72,6 +73,21 @@ class AgentBuilderMCP:
         except Exception as e:
             logger.warning(f"⚠️ Agent Runtime not available: {e}")
             self.runtime = None
+        
+        # Initialize Database for persistence
+        try:
+            from agent_database import AgentDatabase
+            self.db = AgentDatabase()
+            logger.success("✅ Agent Database initialized")
+            
+            # Load existing agents from database
+            saved_agents = self.db.list_agents()
+            for agent_data in saved_agents:
+                self.agents[agent_data["agent_id"]] = agent_data["config"]
+            logger.info(f"📦 Loaded {len(saved_agents)} agents from database")
+        except Exception as e:
+            logger.warning(f"⚠️ Database not available: {e}")
+            self.db = None
 
         logger.info("🤖 Agent Builder MCP initialized with all frameworks")
 
@@ -91,6 +107,11 @@ class AgentBuilderMCP:
             if result.get("success"):
                 agent_config = result["agent"]
                 self.agents[agent_config["agent_id"]] = agent_config
+                
+                # Save to database
+                if self.db:
+                    self.db.save_agent(agent_config)
+                
                 logger.info(f"✅ Created ADK agent: {agent_config['agent_id']}")
                 return json.dumps(agent_config, indent=2)
             else:
@@ -306,7 +327,19 @@ class AgentBuilderMCP:
                 return {"error": "Please provide agent ID and test message"}
             
             # Execute agent
+            start_time = time.time()
             result = self.adk.execute_agent(agent_id, test_message)
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Log to database
+            if self.db and result.get("success"):
+                self.db.log_execution(
+                    agent_id,
+                    test_message,
+                    result.get("response", ""),
+                    True,
+                    execution_time_ms
+                )
             
             return result
         except Exception as e:

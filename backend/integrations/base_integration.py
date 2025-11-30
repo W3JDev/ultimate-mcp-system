@@ -5,6 +5,7 @@ Provides common interface for connecting to external MCP servers
 
 import json
 import subprocess
+import sys
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -37,12 +38,18 @@ class BaseMCPIntegration(ABC):
         """
         try:
             logger.info(f"🚀 Starting {self.server_name} MCP server...")
+            
+            # On Windows, we need to use shell=True or specify the shell explicitly
+            # to find commands like npx that are batch files
+            is_windows = sys.platform.startswith('win')
+            
             self.process = subprocess.Popen(
                 self.server_command,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                shell=is_windows,  # Use shell on Windows to find .cmd/.bat files
             )
 
             # Send initialize request
